@@ -33,9 +33,6 @@
 	speed_coeff = 20
 	efficiency = 0
 	reagents.maximum_volume = 0
-	for(var/obj/item/reagent_containers/glass/beaker/G in component_parts)
-		reagents.maximum_volume += G.volume
-		G.reagents.trans_to(src, G.reagents.total_volume)
 	for(var/obj/item/stock_parts/scanning_module/S in component_parts)
 		efficiency += S.rating
 		bonemeal_req = 1/max(efficiency-1, 1)
@@ -232,6 +229,16 @@
 	reagent_flags = OPENCONTAINER
 	spillable = TRUE
 	resistance_flags = ACID_PROOF
+
+/obj/item/circuitboard/machine/clonepod/revival
+	name = "revival machine (Machine Board)"
+	icon_state = "medical"
+	build_path = /obj/machinery/clonepod/revival
+	req_components = list(
+		/obj/item/stack/cable_coil = 2,
+		/obj/item/stock_parts/scanning_module = 1,
+		/obj/item/stock_parts/manipulator = 4,
+		/obj/item/stack/sheet/iron = 5)
 
 /datum/reagent/bonemeal
 	name = "Bonemeal"
