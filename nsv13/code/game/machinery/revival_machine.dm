@@ -2,6 +2,9 @@
 
 #define CLONE_INITIAL_DAMAGE     150    //Redefining from cloning.dm
 #define MINIMUM_HEAL_LEVEL 40
+
+#define SPEAK(message) radio.talk_into(src, message, radio_channel)
+
 /obj/machinery/clonepod/revival
 	name = "revival machine"
 	desc = "An old revival machine from when cloning was first discovered. It smells metallic."
@@ -11,6 +14,8 @@
 	//New (old) materials required for cloning
 	var/bonemeal_req = 1
 	var/plasm_req = 1
+	var/obj/item/reagent_containers/glass/bonemeal_canister = null
+	var/obj/item/reagent_containers/glass/plasm_canister = null
 
 	//Variables for potential health complications after cloning
 	var/complication = 10 //Don't ask me why this has to be 10
@@ -49,6 +54,128 @@
 		heal_level = 100
 
 //Write examine text
+
+/obj/machinery/clonepod/revival/process()
+	var/mob/living/mob_occupant = occupant
+
+	if(!is_operational) //Autoeject if power is lost (or the pod is dysfunctional due to whatever reason)
+		if(mob_occupant)
+			go_out()
+			log_cloning("[key_name(mob_occupant)] ejected from [src] at [AREACOORD(src)] due to power loss.")
+
+			connected_message("Clone Ejected: Loss of power.")
+
+	else if(mob_occupant && (mob_occupant.loc == src))
+		if(!reagents.has_reagent(/datum/reagent/bonemeal, bonemeal_req) || !reagents.has_reagent(/datum/reagent/plasm, plasm_req))
+			go_out()
+			log_cloning("[key_name(mob_occupant)] ejected from [src] at [AREACOORD(src)] due to insufficient material.")
+			connected_message("Clone Ejected: Not enough material.")
+			if(internal_radio)
+				SPEAK("The cloning of [mob_occupant.real_name] has been ended prematurely due to insufficient material.")
+		else if(SSeconomy.full_ancap)
+			if(!current_insurance)
+				go_out()
+				log_cloning("[key_name(mob_occupant)] ejected from [src] at [AREACOORD(src)] due to invalid bank account.")
+				connected_message("Clone Ejected: No bank account.")
+				if(internal_radio)
+					SPEAK("The cloning of [mob_occupant.real_name] has been terminated due to no bank account to draw payment from.")
+			else if(!current_insurance.adjust_money(-fair_market_price))
+				go_out()
+				log_cloning("[key_name(mob_occupant)] ejected from [src] at [AREACOORD(src)] due to insufficient funds.")
+				connected_message("Clone Ejected: Out of Money.")
+				if(internal_radio)
+					SPEAK("The cloning of [mob_occupant.real_name] has been ended prematurely due to being unable to pay.")
+			else
+				var/datum/bank_account/department/D = SSeconomy.get_dep_account(payment_department)
+				if(D && !D.is_nonstation_account())
+					D.adjust_money(fair_market_price)
+		if(mob_occupant && (mob_occupant.stat == DEAD) || (mob_occupant.suiciding) || mob_occupant.ishellbound())  //Autoeject corpses and suiciding dudes.
+			connected_message("Clone Rejected: Deceased.")
+			if(internal_radio)
+				SPEAK("The cloning of [mob_occupant.real_name] has been \
+					aborted due to unrecoverable tissue failure.")
+			go_out()
+			log_cloning("[key_name(mob_occupant)] ejected from [src] at [AREACOORD(src)] after suiciding.")
+
+		else if(mob_occupant && mob_occupant.cloneloss > (100 - heal_level))
+			mob_occupant.Unconscious(80)
+			var/dmg_mult = CONFIG_GET(number/damage_multiplier)
+			 //Slowly get that clone healed and finished.
+			mob_occupant.adjustCloneLoss(-((speed_coeff / 2) * dmg_mult), TRUE, TRUE)
+			if(reagents.has_reagent(/datum/reagent/bonemeal, bonemeal_req) && reagents.has_reagent(/datum/reagent/plasm, plasm_req))
+				reagents.remove_reagent(/datum/reagent/bonemeal, bonemeal_req)
+				reagents.remove_reagent(/datum/reagent/plasm, plasm_req)
+			var/progress = CLONE_INITIAL_DAMAGE - mob_occupant.getCloneLoss()
+			// To avoid the default cloner making incomplete clones
+			progress += (100 - MINIMUM_HEAL_LEVEL)
+			var/milestone = CLONE_INITIAL_DAMAGE / flesh_number
+			var/installed = flesh_number - unattached_flesh.len
+
+			if((progress / milestone) >= installed)
+				// attach some flesh
+				var/obj/item/I = pick_n_take(unattached_flesh)
+				if(isorgan(I))
+					var/obj/item/organ/O = I
+					O.organ_flags &= ~ORGAN_FROZEN
+					O.Insert(mob_occupant)
+				else if(isbodypart(I))
+					var/obj/item/bodypart/BP = I
+					BP.attach_limb(mob_occupant)
+
+			use_power(5000 * speed_coeff) //This might need tweaking.
+
+		else if(mob_occupant && (mob_occupant.cloneloss <= (100 - heal_level)))
+			connected_message("Cloning Process Complete.")
+			if(internal_radio)
+				SPEAK("The cloning cycle of [mob_occupant.real_name] is complete.")
+
+			// If the cloner is upgraded to debugging high levels, sometimes
+			// organs and limbs can be missing.
+			for(var/i in unattached_flesh)
+				if(isorgan(i))
+					var/obj/item/organ/O = i
+					O.organ_flags &= ~ORGAN_FROZEN
+					O.Insert(mob_occupant)
+				else if(isbodypart(i))
+					var/obj/item/bodypart/BP = i
+					BP.attach_limb(mob_occupant)
+
+			go_out()
+			log_cloning("[key_name(mob_occupant)] completed cloning cycle in [src] at [AREACOORD(src)].")
+
+	else if (!mob_occupant || mob_occupant.loc != src)
+		occupant = null
+		if (!mess && !panel_open)
+			icon_state = "pod_0"
+		use_power(200)
+
+/obj/machinery/clonepod/revival/attackby(obj/item/I, mob/user, params)
+	if(istype(I, /obj/item/reagent_containers/glass/plasm_canister))
+		. = 1 //no afterattack
+		if(plasm_canister)
+			to_chat(user, "<span class='warning'>A plasm canister is already loaded into [src]!</span>")
+			return
+		if(!user.transferItemToLoc(I, src))
+			return
+		plasm_canister = I
+		user.visible_message("[user] places [I] in [src].", \
+							"<span class='notice'>You place [I] in [src].</span>")
+		var/reagentlist = pretty_string_from_reagent_list(I.reagents.reagent_list)
+		log_game("[key_name(user)] added a [I] to revival containing [reagentlist]")
+		return
+	if(istype(I, /obj/item/reagent_containers/glass/bonemeal_canister))
+		. = 1 //no afterattack
+		if(bonemeal_canister)
+			to_chat(user, "<span class='warning'>A plasm canister is already loaded into [src]!</span>")
+			return
+		if(!user.transferItemToLoc(I, src))
+			return
+		bonemeal_canister = I
+		user.visible_message("[user] places [I] in [src].", \
+							"<span class='notice'>You place [I] in [src].</span>")
+		var/reagentlist = pretty_string_from_reagent_list(I.reagents.reagent_list)
+		log_game("[key_name(user)] added a [I] to revival containing [reagentlist]")
+		return
 
 /obj/machinery/clonepod/revival/growclone(clonename, ui, mutation_index, mindref, last_death, datum/species/mrace, list/features, factions, list/quirks, datum/bank_account/insurance, list/traumas, body_only, experimental)
 	var/result = CLONING_SUCCESS
@@ -215,6 +342,9 @@
 
 /obj/item/reagent_containers/glass/plasm_canister
 	name = "plasm canister"
+	icon = 'icons/obj/chemical.dmi' //Temp Sprite
+	icon_state = "beaker"
+	item_state = "beaker"
 	amount_per_transfer_from_this = 10
 	possible_transfer_amounts = list(5, 10, 15, 20, 25, 30, 50, 100)
 	volume = 200
@@ -223,7 +353,10 @@
 	resistance_flags = ACID_PROOF
 
 /obj/item/reagent_containers/glass/bonemeal_canister
-	name = "plasm canister"
+	name = "bonemeal canister"
+	icon = 'icons/obj/chemical.dmi' //Temp Sprite
+	icon_state = "beaker"
+	item_state = "beaker"
 	amount_per_transfer_from_this = 10
 	possible_transfer_amounts = list(5, 10, 15, 20, 25, 30, 50, 100)
 	volume = 200
@@ -296,3 +429,4 @@
 
 #undef CLONE_INITIAL_DAMAGE //undefining again like cloning.dm
 #undef MINIMUM_HEAL_LEVEL
+#undef SPEAK
