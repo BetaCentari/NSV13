@@ -7,13 +7,13 @@
 	desc = "An old revival machine from when cloning was first discovered. It smells metallic."
 	//Create new sprites, new sounds, animations
 	speed_coeff = 20
-	fleshamnt = 0
+	fleshamnt = null
 	//New (old) materials required for cloning
 	var/bonemeal_req = 1
 	var/plasm_req = 1
 
 	//Variables for potential health complications after cloning
-	var/complication = 4
+	var/complication = 10 //Don't ask me why this has to be 10
 	var/appearance_apgar = 0
 	var/pulse_apgar = 0
 	var/grimace_apgar = 0
@@ -22,7 +22,7 @@
 
 
 /obj/machinery/clonepod/revival/proc/apgar_random() //Add complication percentage that changes with better parts
-	var/apgar_random = rand(complication*7, 50)
+	var/apgar_random = rand(complication*3, 50)
 	switch(apgar_random)
 		if(0 to 35)
 			return 2
@@ -239,7 +239,7 @@
 	req_components = list(
 		/obj/item/stack/cable_coil = 2,
 		/obj/item/stock_parts/scanning_module = 1,
-		/obj/item/stock_parts/manipulator = 4,
+		/obj/item/stock_parts/manipulator = 2,
 		/obj/item/stack/sheet/iron = 5)
 
 /datum/reagent/bonemeal
