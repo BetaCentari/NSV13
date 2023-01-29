@@ -185,14 +185,13 @@
 			mob_occupant.ForceContractDisease(D, FALSE, TRUE)
 	switch(grimace_apgar)
 		if(0)
-			mob_occupant.adjustStaminaLoss(100)
+			mob_occupant.adjustStaminaLoss(120)
 		if(1)
 			mob_occupant.adjustStaminaLoss(50)
 	switch(activity_apgar)
 		if(0)
 			mob_occupant.Paralyze(150 SECONDS)
 		if(1)
-			mob_occupant.adjustStaminaLoss(120)
 			mob_occupant.Paralyze(30 SECONDS)
 	switch(respiration_apgar)
 		if(0)
@@ -255,6 +254,45 @@
 	reagent_state = LIQUID
 	color = "#948f2c"
 	chem_flags = CHEMICAL_RNG_GENERAL | CHEMICAL_RNG_FUN | CHEMICAL_RNG_BOTANY | CHEMICAL_GOAL_CHEMIST_DRUG | CHEMICAL_GOAL_CHEMIST_BLOODSTREAM
+
+/datum/chemical_reaction/rapidoxadone
+	name = "Rapidoxadone"
+	id = /datum/reagent/medicine/rapidoxadone
+	results = list(/datum/reagent/medicine/rapidoxadone = 3)
+	required_reagents = list(/datum/reagent/medicine/clonexadone = 1, /datum/reagent/medicine/pyroxadone = 1, /datum/reagent/medicine/cryoxadone = 1)
+	required_catalysts = new/list(/datum/reagent/toxin/plasma = 1)
+
+/datum/reagent/medicine/rapidoxadone
+	name = "Rapidoxadone"
+	description = "A dangerous chemical that can rapidly heal damage done by the cloning process but is quite toxic. It was outlawed a long time ago."
+	color = "#7700ff"
+	chem_flags = CHEMICAL_RNG_GENERAL | CHEMICAL_RNG_FUN | CHEMICAL_RNG_BOTANY | CHEMICAL_GOAL_BARTENDER_SERVING
+	taste_description = "urple"
+	overdose_threshold = 15
+
+/datum/reagent/medicine/rapidoxadone/on_mob_life(mob/living/carbon/M)
+	M.adjustToxLoss(0.5) //Trade 5 CLone Damage for half a tox damage
+	M.adjustCloneLoss(-5)
+	REMOVE_TRAIT(M, TRAIT_DISFIGURED, TRAIT_GENERIC) //fixes common causes for disfiguration
+	..()
+
+/datum/reagent/medicine/rapidoxadone/overdose_start(mob/living/M) //Don't OD, your cells will completely fall apart
+	to_chat(M, "<span class='userdanger'>YOU EXPLOSIVELY LIQUEFACT!</span>")
+	M.visible_message("<span class='warning'>[M] experiences something that could be described as explosive liquefaction!</span>")
+	playsound(M, 'sound/effects/spray.ogg', 10, 1, -3)
+	if (!QDELETED(M))
+		for(var/obj/item/W in M)
+			M.dropItemToGround(W)
+			if(prob(50))
+				step(W, pick(GLOB.alldirs))
+		ADD_TRAIT(M, TRAIT_DISFIGURED, TRAIT_GENERIC)
+		M.gib_animation()
+		sleep(3)
+		M.adjustBruteLoss(1000)
+		M.spawn_gibs()
+		M.spill_organs()
+		M.spread_bodyparts()
+	return TRUE
 
 #undef CLONE_INITIAL_DAMAGE //undefining again like cloning.dm
 #undef MINIMUM_HEAL_LEVEL
