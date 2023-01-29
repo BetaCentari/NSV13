@@ -271,7 +271,7 @@
 	overdose_threshold = 15
 
 /datum/reagent/medicine/rapidoxadone/on_mob_life(mob/living/carbon/M)
-	M.adjustToxLoss(0.5) //Trade 5 CLone Damage for half a tox damage
+	M.adjustToxLoss(1) //Trade 5 CLone Damage for half a tox damage
 	M.adjustCloneLoss(-5)
 	REMOVE_TRAIT(M, TRAIT_DISFIGURED, TRAIT_GENERIC) //fixes common causes for disfiguration
 	..()
