@@ -3,6 +3,8 @@
 #define CLONE_INITIAL_DAMAGE     150    //Redefining from cloning.dm
 #define MINIMUM_HEAL_LEVEL 40
 /obj/machinery/clonepod/revival
+	name = "revival machine"
+	desc = "An old revival machine from when cloning was first discovered. It smells metallic."
 	//Create new sprites, new sounds, animations
 	speed_coeff = 20
 	fleshamnt = 0
@@ -11,7 +13,7 @@
 	var/plasm_req = 1
 
 	//Variables for potential health complications after cloning
-	var/complication = 1
+	var/complication = 4
 	var/appearance_apgar = 0
 	var/pulse_apgar = 0
 	var/grimace_apgar = 0
@@ -20,13 +22,13 @@
 
 
 /obj/machinery/clonepod/revival/proc/apgar_random() //Add complication percentage that changes with better parts
-	var/apgar_random = rand(1, 100)
+	var/apgar_random = rand(complication*7, 50)
 	switch(apgar_random)
-		if(1 to 70)
+		if(0 to 35)
 			return 2
-		if(71 to 90)
+		if(36 to 45)
 			return 1
-		if(91 to 100)
+		if(46 to 50)
 			return 0
 
 /obj/machinery/clonepod/revival/RefreshParts()
@@ -37,9 +39,9 @@
 		efficiency += S.rating
 		bonemeal_req = 1/max(efficiency-1, 1)
 		plasm_req = 1/max(efficiency-1, 1)
-
 	for(var/obj/item/stock_parts/manipulator/P in component_parts)
 		speed_coeff += P.rating
+		complication -= P.rating
 	heal_level = (efficiency * 15) + 10
 	if(heal_level < MINIMUM_HEAL_LEVEL)
 		heal_level = MINIMUM_HEAL_LEVEL
