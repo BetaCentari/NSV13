@@ -177,6 +177,23 @@
 		log_game("[key_name(user)] added a [I] to revival containing [reagentlist]")
 		return
 
+/obj/machinery/clonepod/revival/AltClick(mob/user)
+	if(bonemeal_canister)
+		bonemeal_canister.forceMove(drop_location())
+		if(Adjacent(user) && !issilicon(user))
+			user.put_in_hands(bonemeal_canister)
+		bonemeal_canister = null
+		user.visible_message("<span class='notice'>[user] removes the bonemeal canister from [src]</span>")
+
+	if(plasm_canister)
+		plasm_canister.forceMove(drop_location())
+		if(Adjacent(user) && !issilicon(user))
+			user.put_in_hands(plasm_canister)
+		plasm_canister = null
+		user.visible_message("<span class='notice'>[user] removes the plasm canister from [src]</span>")
+	else
+		user.visible_message("<span class='notice'>[user] tries to remove something from [src] but nothing was there.")
+
 /obj/machinery/clonepod/revival/growclone(clonename, ui, mutation_index, mindref, last_death, datum/species/mrace, list/features, factions, list/quirks, datum/bank_account/insurance, list/traumas, body_only, experimental)
 	var/result = CLONING_SUCCESS
 	if(!reagents.has_reagent(/datum/reagent/bonemeal, bonemeal_req) || !reagents.has_reagent(/datum/reagent/plasm, plasm_req))
