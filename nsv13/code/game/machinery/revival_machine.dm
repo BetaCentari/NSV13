@@ -14,9 +14,9 @@
 	fleshamnt = null
 	//New (old) materials required for cloning
 	var/bonemeal_req = 1
-	var/plasm_req = 1
+	var/plasma_req = 1 //Reagent required is /datum/reagent/blood_plasma
 	var/obj/item/reagent_containers/glass/bonemeal_canister = null
-	var/obj/item/reagent_containers/glass/plasm_canister = null
+	var/obj/item/reagent_containers/glass/plasma_canister = null
 	var/filthy = 0
 
 	//Variables for potential health complications after cloning
@@ -45,7 +45,7 @@
 	for(var/obj/item/stock_parts/scanning_module/S in component_parts)
 		efficiency += S.rating
 		bonemeal_req = 1/max(efficiency-1, 1)
-		plasm_req = 1/max(efficiency-1, 1)
+		plasma_req = 1/max(efficiency-1, 1)
 	for(var/obj/item/stock_parts/manipulator/P in component_parts)
 		speed_coeff += P.rating
 		complication -= P.rating
@@ -68,7 +68,7 @@
 			connected_message("Clone Ejected: Loss of power.")
 
 	else if(mob_occupant && (mob_occupant.loc == src))
-		if(!bonemeal_canister.reagents.has_reagent(/datum/reagent/bonemeal, bonemeal_req) || !plasm_canister.reagents.has_reagent(/datum/reagent/plasm, plasm_req))
+		if(!bonemeal_canister?.reagents.has_reagent(/datum/reagent/bonemeal, bonemeal_req) || !plasma_canister?.reagents.has_reagent(/datum/reagent/blood_plasma, plasma_req))
 			go_out()
 			log_cloning("[key_name(mob_occupant)] ejected from [src] at [AREACOORD(src)] due to insufficient material.")
 			connected_message("Clone Ejected: Not enough material.")
@@ -104,9 +104,9 @@
 			var/dmg_mult = CONFIG_GET(number/damage_multiplier)
 			 //Slowly get that clone healed and finished.
 			mob_occupant.adjustCloneLoss(-((speed_coeff / 2) * dmg_mult), TRUE, TRUE)
-			if(bonemeal_canister.reagents.has_reagent(/datum/reagent/bonemeal, bonemeal_req) && plasm_canister.reagents.has_reagent(/datum/reagent/plasm, plasm_req))
+			if(bonemeal_canister.reagents.has_reagent(/datum/reagent/bonemeal, bonemeal_req) && plasma_canister.reagents.has_reagent(/datum/reagent/blood_plasma, plasma_req))
 				bonemeal_canister.reagents.remove_reagent(/datum/reagent/bonemeal, bonemeal_req)
-				plasm_canister.reagents.remove_reagent(/datum/reagent/plasm, plasm_req)
+				plasma_canister.reagents.remove_reagent(/datum/reagent/blood_plasma, plasma_req)
 			var/progress = CLONE_INITIAL_DAMAGE - mob_occupant.getCloneLoss()
 			// To avoid the default cloner making incomplete clones
 			progress += (100 - MINIMUM_HEAL_LEVEL)
@@ -152,14 +152,14 @@
 		use_power(200)
 
 /obj/machinery/clonepod/revival/attackby(obj/item/I, mob/user, params)
-	if(istype(I, /obj/item/reagent_containers/glass/plasm_canister))
+	if(istype(I, /obj/item/reagent_containers/glass/plasma_canister))
 		. = 1 //no afterattack
-		if(plasm_canister)
-			to_chat(user, "<span class='warning'>A plasm canister is already loaded into [src]!</span>")
+		if(plasma_canister)
+			to_chat(user, "<span class='warning'>A plasma canister is already loaded into [src]!</span>")
 			return
 		if(!user.transferItemToLoc(I, src))
 			return
-		plasm_canister = I
+		plasma_canister = I
 		user.visible_message("[user] places [I] in [src].", \
 							"<span class='notice'>You place [I] in [src].</span>")
 		var/reagentlist = pretty_string_from_reagent_list(I.reagents.reagent_list)
@@ -168,7 +168,7 @@
 	if(istype(I, /obj/item/reagent_containers/glass/bonemeal_canister))
 		. = 1 //no afterattack
 		if(bonemeal_canister)
-			to_chat(user, "<span class='warning'>A plasm canister is already loaded into [src]!</span>")
+			to_chat(user, "<span class='warning'>A bonemeal canister is already loaded into [src]!</span>")
 			return
 		if(!user.transferItemToLoc(I, src))
 			return
@@ -218,18 +218,18 @@
 		bonemeal_canister = null
 		user.visible_message("<span class='notice'>[user] removes the bonemeal canister from [src]</span>")
 
-	if(plasm_canister)
-		plasm_canister.forceMove(drop_location())
+	if(plasma_canister)
+		plasma_canister.forceMove(drop_location())
 		if(Adjacent(user) && !issilicon(user))
-			user.put_in_hands(plasm_canister)
-		plasm_canister = null
-		user.visible_message("<span class='notice'>[user] removes the plasm canister from [src]</span>")
+			user.put_in_hands(plasma_canister)
+		plasma_canister = null
+		user.visible_message("<span class='notice'>[user] removes the plasma canister from [src]</span>")
 	else
 		user.visible_message("<span class='notice'>[user] tries to remove something from [src] but nothing was there.")
 
 /obj/machinery/clonepod/revival/growclone(clonename, ui, mutation_index, mindref, last_death, datum/species/mrace, list/features, factions, list/quirks, datum/bank_account/insurance, list/traumas, body_only, experimental)
 	var/result = CLONING_SUCCESS
-	if(!bonemeal_canister.reagents.has_reagent(/datum/reagent/bonemeal, bonemeal_req) || !plasm_canister.reagents.has_reagent(/datum/reagent/plasm, plasm_req))
+	if(!bonemeal_canister.reagents.has_reagent(/datum/reagent/bonemeal, bonemeal_req) || !plasma_canister.reagents.has_reagent(/datum/reagent/blood_plasma, plasma_req))
 		connected_message("Cannot start cloning: Not enough raw materials.")
 		return ERROR_NO_SYNTHFLESH
 	if(panel_open)
@@ -392,8 +392,8 @@
 	. = ..()
 	filthy = TRUE //Clean out the machine every time it's used
 
-/obj/item/reagent_containers/glass/plasm_canister
-	name = "plasm canister"
+/obj/item/reagent_containers/glass/plasma_canister
+	name = "blood plasma canister"
 	icon = 'icons/obj/chemical.dmi' //Temp Sprite
 	icon_state = "beaker"
 	item_state = "beaker"
@@ -403,6 +403,8 @@
 	reagent_flags = OPENCONTAINER
 	spillable = TRUE
 	resistance_flags = ACID_PROOF
+	list_reagents = list(/datum/reagent/blood_plasma = 200)
+
 
 /obj/item/reagent_containers/glass/bonemeal_canister
 	name = "bonemeal canister"
@@ -415,6 +417,8 @@
 	reagent_flags = OPENCONTAINER
 	spillable = TRUE
 	resistance_flags = ACID_PROOF
+	list_reagents = list(/datum/reagent/bonemeal = 200)
+
 
 /obj/item/circuitboard/machine/clonepod/revival
 	name = "revival machine (Machine Board)"
@@ -433,8 +437,8 @@
 	color = "#FFFFFF"
 	chem_flags = CHEMICAL_RNG_GENERAL | CHEMICAL_RNG_FUN | CHEMICAL_RNG_BOTANY | CHEMICAL_GOAL_CHEMIST_DRUG | CHEMICAL_GOAL_CHEMIST_BLOODSTREAM
 
-/datum/reagent/plasm
-	name = "Plasm"
+/datum/reagent/blood_plasma
+	name = "Blood plasma"
 	description = "A fluidic concoction of organic compounds resembling blood plasma and other basic proteins for use in a revival machine"
 	reagent_state = LIQUID
 	color = "#948f2c"
@@ -453,11 +457,12 @@
 	color = "#7700ff"
 	chem_flags = CHEMICAL_RNG_GENERAL | CHEMICAL_RNG_FUN | CHEMICAL_RNG_BOTANY | CHEMICAL_GOAL_BARTENDER_SERVING
 	taste_description = "urple"
-	overdose_threshold = 15
+	overdose_threshold = 30
 
-/datum/reagent/medicine/rapidoxadone/on_mob_life(mob/living/carbon/M)
+/datum/reagent/medicine/rapidoxadone/on_mob_life(mob/living/carbon/M) //add mood debuff
 	M.adjustToxLoss(1) //Trade 5 CLone Damage for half a tox damage
 	M.adjustCloneLoss(-5)
+	M.disgust += 2.5
 	REMOVE_TRAIT(M, TRAIT_DISFIGURED, TRAIT_GENERIC) //fixes common causes for disfiguration
 	..()
 
