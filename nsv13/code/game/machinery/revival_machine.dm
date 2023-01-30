@@ -2,7 +2,8 @@
 
 #define CLONE_INITIAL_DAMAGE     150    //Redefining from cloning.dm
 #define MINIMUM_HEAL_LEVEL 40
-
+#define ERROR_NO_RAW_MATERIALS 105
+#define FILTHY_COMPLICATION 3
 #define SPEAK(message) radio.talk_into(src, message, radio_channel)
 
 /obj/machinery/clonepod/revival
@@ -16,6 +17,7 @@
 	var/plasm_req = 1
 	var/obj/item/reagent_containers/glass/bonemeal_canister = null
 	var/obj/item/reagent_containers/glass/plasm_canister = null
+	var/filthy = 0
 
 	//Variables for potential health complications after cloning
 	var/complication = 10 //Don't ask me why this has to be 10
@@ -66,7 +68,7 @@
 			connected_message("Clone Ejected: Loss of power.")
 
 	else if(mob_occupant && (mob_occupant.loc == src))
-		if(!reagents.has_reagent(/datum/reagent/bonemeal, bonemeal_req) || !reagents.has_reagent(/datum/reagent/plasm, plasm_req))
+		if(!bonemeal_canister.reagents.has_reagent(/datum/reagent/bonemeal, bonemeal_req) || !plasm_canister.reagents.has_reagent(/datum/reagent/plasm, plasm_req))
 			go_out()
 			log_cloning("[key_name(mob_occupant)] ejected from [src] at [AREACOORD(src)] due to insufficient material.")
 			connected_message("Clone Ejected: Not enough material.")
@@ -102,9 +104,9 @@
 			var/dmg_mult = CONFIG_GET(number/damage_multiplier)
 			 //Slowly get that clone healed and finished.
 			mob_occupant.adjustCloneLoss(-((speed_coeff / 2) * dmg_mult), TRUE, TRUE)
-			if(reagents.has_reagent(/datum/reagent/bonemeal, bonemeal_req) && reagents.has_reagent(/datum/reagent/plasm, plasm_req))
-				reagents.remove_reagent(/datum/reagent/bonemeal, bonemeal_req)
-				reagents.remove_reagent(/datum/reagent/plasm, plasm_req)
+			if(bonemeal_canister.reagents.has_reagent(/datum/reagent/bonemeal, bonemeal_req) && plasm_canister.reagents.has_reagent(/datum/reagent/plasm, plasm_req))
+				bonemeal_canister.reagents.remove_reagent(/datum/reagent/bonemeal, bonemeal_req)
+				plasm_canister.reagents.remove_reagent(/datum/reagent/plasm, plasm_req)
 			var/progress = CLONE_INITIAL_DAMAGE - mob_occupant.getCloneLoss()
 			// To avoid the default cloner making incomplete clones
 			progress += (100 - MINIMUM_HEAL_LEVEL)
@@ -177,6 +179,37 @@
 		log_game("[key_name(user)] added a [I] to revival containing [reagentlist]")
 		return
 
+	if(istype(I, /obj/item/reagent_containers/spray))
+		var/obj/item/reagent_containers/spray/clean_spray = I
+		if(clean_spray.reagents.has_reagent(/datum/reagent/space_cleaner, clean_spray.amount_per_transfer_from_this))
+			clean_spray.reagents.remove_reagent(/datum/reagent/space_cleaner, clean_spray.amount_per_transfer_from_this,1)
+			playsound(loc, 'sound/effects/spray3.ogg', 50, 1, -6)
+			user.visible_message("[user] has cleaned \the [src].", "<span class='notice'>You clean \the [src].</span>")
+			filthy = FALSE
+			complication -= FILTHY_COMPLICATION
+			update_icon()
+		else
+			to_chat(user, "<span class='warning'>You need more space cleaner!</span>")
+		return TRUE
+
+	if(istype(I, /obj/item/soap) || istype(I, /obj/item/reagent_containers/glass/rag))
+		var/cleanspeed = 50
+		if(istype(I, /obj/item/soap))
+			var/obj/item/soap/used_soap = I
+			cleanspeed = used_soap.cleanspeed
+		user.visible_message("[user] starts to clean \the [src].", "<span class='notice'>You start to clean \the [src]...</span>")
+		if(do_after(user, cleanspeed, target = src))
+			user.visible_message("[user] has cleaned \the [src].", "<span class='notice'>You clean \the [src].</span>")
+			filthy = FALSE
+			complication -= FILTHY_COMPLICATION
+			update_icon()
+		return TRUE
+
+	if(filthy) // The microwave is all dirty so can't be used!
+		to_chat(user, "<span class='warning'>\The [src] is filthy!</span>")
+		return TRUE
+	..()
+
 /obj/machinery/clonepod/revival/AltClick(mob/user)
 	if(bonemeal_canister)
 		bonemeal_canister.forceMove(drop_location())
@@ -196,7 +229,7 @@
 
 /obj/machinery/clonepod/revival/growclone(clonename, ui, mutation_index, mindref, last_death, datum/species/mrace, list/features, factions, list/quirks, datum/bank_account/insurance, list/traumas, body_only, experimental)
 	var/result = CLONING_SUCCESS
-	if(!reagents.has_reagent(/datum/reagent/bonemeal, bonemeal_req) || !reagents.has_reagent(/datum/reagent/plasm, plasm_req))
+	if(!bonemeal_canister.reagents.has_reagent(/datum/reagent/bonemeal, bonemeal_req) || !plasm_canister.reagents.has_reagent(/datum/reagent/plasm, plasm_req))
 		connected_message("Cannot start cloning: Not enough raw materials.")
 		return ERROR_NO_SYNTHFLESH
 	if(panel_open)
@@ -205,6 +238,8 @@
 		return ERROR_MESS_OR_ATTEMPTING
 	if(experimental && !experimental_pod)
 		return ERROR_MISSING_EXPERIMENTAL_POD
+	if(filthy) //If it's dirty, it's more likely to cause problems
+		complication += FILTHY_COMPLICATION
 
 	if(!body_only && !(experimental && experimental_pod))
 		clonemind = locate(mindref) in SSticker.minds
@@ -355,7 +390,7 @@
 		if(0)
 			say("Stillborn patient, recycle body immediately.")
 	. = ..()
-	mess = TRUE //Clean out the machine every time it's used
+	filthy = TRUE //Clean out the machine every time it's used
 
 /obj/item/reagent_containers/glass/plasm_canister
 	name = "plasm canister"
@@ -447,3 +482,4 @@
 #undef CLONE_INITIAL_DAMAGE //undefining again like cloning.dm
 #undef MINIMUM_HEAL_LEVEL
 #undef SPEAK
+#undef FILTHY_COMPLICATION

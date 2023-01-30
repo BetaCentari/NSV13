@@ -2110,6 +2110,12 @@
 	dir = 4
 	},
 /area/science/research)
+"iU" = (
+/obj/machinery/computer/cloning,
+/turf/open/floor/plasteel/dark/side{
+	dir = 4
+	},
+/area/crew_quarters/bar)
 "iV" = (
 /obj/machinery/hydroponics/constructable,
 /obj/machinery/light{
@@ -6077,6 +6083,7 @@
 /area/hallway/secondary/entry)
 "zd" = (
 /obj/item/trash/can/food,
+/obj/machinery/dna_scannernew,
 /turf/open/floor/plasteel/dark,
 /area/crew_quarters/bar)
 "zf" = (
@@ -42360,7 +42367,7 @@ LZ
 He
 FU
 Pv
-tp
+iU
 Ee
 Md
 lo
