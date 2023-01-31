@@ -205,7 +205,7 @@
 			update_icon()
 		return TRUE
 
-	if(filthy) // The microwave is all dirty so can't be used!
+	if(filthy) // Disgusting
 		to_chat(user, "<span class='warning'>\The [src] is filthy!</span>")
 		return TRUE
 	..()
@@ -343,6 +343,7 @@
 	attempting = FALSE
 	return result
 
+//BUG FIX Figure out why it does it twice
 /obj/machinery/clonepod/revival/go_out() //Spits out the clone and determines complications alongside normal cloning problems
 	appearance_apgar = apgar_random()
 	pulse_apgar = apgar_random()
@@ -483,6 +484,9 @@
 		M.spill_organs()
 		M.spread_bodyparts()
 	return TRUE
+
+/obj/machinery/dna_scannernew/revival //To make scanning fast, it's already capable of autoscanning patients
+	scan_level = 4
 
 #undef CLONE_INITIAL_DAMAGE //undefining again like cloning.dm
 #undef MINIMUM_HEAL_LEVEL

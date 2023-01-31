@@ -3732,6 +3732,7 @@
 #include "nsv13\code\game\general_quarters\dropship_types.dm"
 #include "nsv13\code\game\machinery\blast_shower.dm"
 #include "nsv13\code\game\machinery\boarding_harpoon.dm"
+#include "nsv13\code\game\machinery\body_recycler.dm"
 #include "nsv13\code\game\machinery\custom_airlocks.dm"
 #include "nsv13\code\game\machinery\custom_machines.dm"
 #include "nsv13\code\game\machinery\dance_machine.dm"

@@ -1884,7 +1884,9 @@
 /turf/open/space/basic,
 /area/nsv/weapons/fore)
 "in" = (
-/obj/item/reagent_containers/glass/plasm_canister,
+/obj/item/reagent_containers/glass/plasma_canister,
+/obj/item/reagent_containers/glass/plasma_canister,
+/obj/item/reagent_containers/glass/plasma_canister,
 /turf/open/floor/plasteel/dark/side{
 	dir = 8
 	},
@@ -7246,6 +7248,8 @@
 /area/hallway/primary/aft)
 "Ee" = (
 /obj/item/reagent_containers/glass/bonemeal_canister,
+/obj/item/reagent_containers/glass/bonemeal_canister,
+/obj/item/reagent_containers/glass/bonemeal_canister,
 /turf/open/floor/plasteel/dark/side{
 	dir = 4
 	},
@@ -8887,6 +8891,7 @@
 /area/crew_quarters/dorms)
 "KG" = (
 /obj/effect/landmark/start/bartender,
+/obj/machinery/clonepod/revival,
 /turf/open/floor/plasteel/dark,
 /area/crew_quarters/bar)
 "KI" = (
@@ -11678,6 +11683,12 @@
 	dir = 1
 	},
 /area/maintenance/department/cargo)
+"VN" = (
+/obj/machinery/clonepod/revival,
+/turf/open/floor/plasteel/dark/side{
+	dir = 8
+	},
+/area/crew_quarters/bar)
 "VP" = (
 /obj/machinery/hydroponics/constructable,
 /obj/machinery/light{
@@ -42881,7 +42892,7 @@ ZJ
 nt
 Mp
 WD
-wi
+VN
 in
 iK
 lo
