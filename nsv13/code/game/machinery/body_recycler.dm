@@ -28,6 +28,62 @@
 		if(M.rating >= 2)
 			ignore_clothing = TRUE
 
+/obj/machinery/body_recycler/attack_paw(mob/user)
+	return attack_hand(user)
+
+/obj/machinery/body_recycler/container_resist(mob/living/user)
+	go_out()
+
+/obj/machinery/body_recycler/relaymove(mob/living/user)
+	go_out()
+
+/obj/machinery/body_recycler/attack_hand(mob/user)
+	. = ..()
+	if(.)
+		return
+	if(machine_stat & (NOPOWER|BROKEN))
+		return
+	if(operating)
+		to_chat(user, "<span class='danger'>It's locked and running.</span>")
+		return
+
+	if(jammed) //Add awful grinding noise
+		visible_message("<span class='danger'>The blades are caught on something!</span>")
+		return
+
+	if(!anchored)
+		to_chat(user, "<span class='notice'>\The [src] cannot be used unless bolted to the ground.</span>")
+		return
+
+	if(user.pulling && user.a_intent == INTENT_GRAB && isliving(user.pulling))
+		var/mob/living/L = user.pulling
+		if(!iscarbon(L))
+			to_chat(user, "<span class='danger'>This item is not suitable for the gibber!</span>")
+			return
+		var/mob/living/carbon/C = L
+		if(C.buckled ||C.has_buckled_mobs())
+			to_chat(user, "<span class='warning'>[C] is attached to something!</span>")
+			return
+
+		if(!ignore_clothing)
+			for(var/obj/item/I in C.held_items + C.get_equipped_items())
+				if(!HAS_TRAIT(I, TRAIT_NODROP))
+					startgrinding()
+					jammed = TRUE //STRIP YOUR DAMNED DEAD I SAID
+
+		user.visible_message("<span class='danger'>[user] starts to put [C] into the gibber!</span>")
+
+		add_fingerprint(user)
+
+		if(do_after(user, grindtime, target = src))
+			if(C && user.pulling == C && !C.buckled && !C.has_buckled_mobs() && !occupant)
+				user.visible_message("<span class='danger'>[user] stuffs [C] into the gibber!</span>")
+				C.forceMove(src)
+				occupant = C
+				update_icon()
+	else
+		startgrinding(user)
+
 /obj/machinery/body_recycler/verb/eject()
 	set category = "Object"
 	set name = "empty recycler"
@@ -55,26 +111,26 @@
 	if(istype(I, /obj/item/reagent_containers/glass/plasma_canister))
 		. = 1 //no afterattack
 		if(plasma_canister)
-			to_chat(user, "<span class='warning'>A plasma canister is already loaded into [src]!</span>")
+			to_chat(user, "<span class='warning'>A plasma canister is already loaded into \the [src]!</span>")
 			return
 		if(!user.transferItemToLoc(I, src))
 			return
 		plasma_canister = I
-		user.visible_message("[user] places [I] in [src].", \
-							"<span class='notice'>You place [I] in [src].</span>")
+		user.visible_message("[user] places [I] in \the [src].", \
+							"<span class='notice'>You place [I] in \the [src].</span>")
 		var/reagentlist = pretty_string_from_reagent_list(I.reagents.reagent_list)
 		log_game("[key_name(user)] added a [I] to body recycler containing [reagentlist]")
 		return
 	if(istype(I, /obj/item/reagent_containers/glass/bonemeal_canister))
 		. = 1 //no afterattack
 		if(bonemeal_canister)
-			to_chat(user, "<span class='warning'>A bonemeal canister is already loaded into [src]!</span>")
+			to_chat(user, "<span class='warning'>A bonemeal canister is already loaded into \the [src]!</span>")
 			return
 		if(!user.transferItemToLoc(I, src))
 			return
 		bonemeal_canister = I
-		user.visible_message("[user] places [I] in [src].", \
-							"<span class='notice'>You place [I] in [src].</span>")
+		user.visible_message("[user] places [I] in \the [src].", \
+							"<span class='notice'>You place [I] in \the [src].</span>")
 		var/reagentlist = pretty_string_from_reagent_list(I.reagents.reagent_list)
 		log_game("[key_name(user)] added a [I] to body recycler containing [reagentlist]")
 		return
@@ -106,6 +162,25 @@
 	if(filthy) // It's dirty, smells awful
 		to_chat(user, "<span class='warning'>\The [src] is filthy!</span>")
 		return TRUE
+
+	if(default_deconstruction_screwdriver(user, "grinder_open", "grinder", I)) //Change Sprites Here
+		go_out()
+		return
+
+	else if(default_pry_open(I))
+		return
+
+	else if(default_unfasten_wrench(user, I))
+		return
+
+	else if(default_deconstruction_crowbar(I))
+		return
+
+	if(I.tool_behaviour == TOOL_WIRECUTTER)
+		if(jammed && panel_open)
+			jammed = FALSE
+			to_chat(user, "You use \the [I] to clear the jam inside \the [src]")
+			return
 	..()
 
 /obj/machinery/body_recycler/AltClick(mob/user)
@@ -114,16 +189,16 @@
 		if(Adjacent(user) && !issilicon(user))
 			user.put_in_hands(bonemeal_canister)
 		bonemeal_canister = null
-		user.visible_message("<span class='notice'>[user] removes the bonemeal canister from [src]</span>")
+		user.visible_message("<span class='notice'>[user] removes the bonemeal canister from \the [src]</span>")
 
 	if(plasma_canister)
 		plasma_canister.forceMove(drop_location())
 		if(Adjacent(user) && !issilicon(user))
 			user.put_in_hands(plasma_canister)
 		plasma_canister = null
-		user.visible_message("<span class='notice'>[user] removes the plasma canister from [src]</span>")
+		user.visible_message("<span class='notice'>[user] removes the plasma canister from \the [src]</span>")
 	else
-		user.visible_message("<span class='notice'>[user] tries to remove something from [src] but nothing was there.")
+		user.visible_message("<span class='notice'>[user] tries to remove something from \the [src] but nothing was there.")
 
 /obj/machinery/body_recycler/proc/startgrinding(mob/user)
 	if(src.operating)
