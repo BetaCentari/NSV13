@@ -7,7 +7,7 @@
 
 	var/operating = FALSE //Is it on?
 	var/filthy = FALSE // Does it need cleaning?
-	var/grindtime = 40 // Time from starting until it fills the canisters
+	var/grindtime = 300 // Time from starting until it fills the canisters
 	var/efficiency = 1 //How much does it extract
 	var/ignore_clothing = FALSE //Strip the dead!
 	var/jammed = FALSE //Did you strip the dead? Or just get unlucky
@@ -19,12 +19,12 @@
 	. = ..()
 
 /obj/machinery/body_recycler/RefreshParts()
-	grindtime = 40
+	grindtime = 300
 	efficiency = 1
 	for(var/obj/item/stock_parts/matter_bin/B in component_parts)
 		efficiency += B.rating
 	for(var/obj/item/stock_parts/manipulator/M in component_parts)
-		grindtime -= 5 * M.rating
+		grindtime -= 20 * M.rating
 		if(M.rating >= 2)
 			ignore_clothing = TRUE
 
@@ -58,7 +58,7 @@
 	if(user.pulling && user.a_intent == INTENT_GRAB && isliving(user.pulling))
 		var/mob/living/L = user.pulling
 		if(!iscarbon(L))
-			to_chat(user, "<span class='danger'>This item is not suitable for the gibber!</span>")
+			to_chat(user, "<span class='danger'>Patient is still alive, euthanize patient before recycling!</span>")
 			return
 		var/mob/living/carbon/C = L
 		if(C.buckled ||C.has_buckled_mobs())
@@ -68,14 +68,14 @@
 		if(!ignore_clothing)
 			for(var/obj/item/I in C.held_items + C.get_equipped_items())
 				if(!HAS_TRAIT(I, TRAIT_NODROP))
-					startgrinding()
+					startgrinding(user)
 					jammed = TRUE //STRIP YOUR DAMNED DEAD I SAID
 
 		user.visible_message("<span class='danger'>[user] starts to put [C] into the gibber!</span>")
 
 		add_fingerprint(user)
 
-		if(do_after(user, grindtime, target = src))
+		if(do_after(user, 10 SECONDS, target = src))
 			if(C && user.pulling == C && !C.buckled && !C.has_buckled_mobs() && !occupant)
 				user.visible_message("<span class='danger'>[user] stuffs [C] into the gibber!</span>")
 				C.forceMove(src)
@@ -161,7 +161,6 @@
 
 	if(filthy) // It's dirty, smells awful
 		to_chat(user, "<span class='warning'>\The [src] is filthy!</span>")
-		return TRUE
 
 	if(default_deconstruction_screwdriver(user, "grinder_open", "grinder", I)) //Change Sprites Here
 		go_out()
