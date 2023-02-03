@@ -1,3 +1,5 @@
+//Works like a gibber and a reagent grinder in one
+
 /obj/machinery/body_recycler
 	name = "Recycler"
 	desc = "A gruesome machine designed to extract reagents from humanoid corpses for use in a revival machine"
@@ -12,10 +14,13 @@
 	var/ignore_clothing = FALSE //Strip the dead!
 	var/jammed = FALSE //Did you strip the dead? Or just get unlucky
 
+	var/list/holdingitems //So we can grind organs and limbs
+
 	var/obj/item/reagent_containers/glass/bonemeal_canister //Need to have canisters for it to fill
 	var/obj/item/reagent_containers/glass/plasma_canister
 
 /obj/machinery/body_recycler/Initialize(mapload)
+	holdingitems = list()
 	. = ..()
 
 /obj/machinery/body_recycler/RefreshParts()
@@ -37,7 +42,7 @@
 /obj/machinery/body_recycler/relaymove(mob/living/user)
 	go_out()
 
-/obj/machinery/body_recycler/attack_hand(mob/user)
+/obj/machinery/body_recycler/attack_hand(mob/user) //Add organs and limbs to be ground
 	. = ..()
 	if(.)
 		return
@@ -99,6 +104,12 @@
 	dropContents()
 	update_icon()
 
+/obj/machinery/body_recycler/proc/drop_all_items()
+	for(var/i in holdingitems)
+		var/atom/movable/AM = i
+		AM.forceMove(drop_location())
+	holdingitems = list()
+
 /obj/machinery/body_recycler/examine(mob/user)
 	. = ..()
 	if(in_range(user, src) || isobserver(user))
@@ -108,6 +119,20 @@
 				. += "<span class='notice'>The recycler has been upgraded to process inorganic materials.</span>"
 
 /obj/machinery/body_recycler/attackby(obj/item/I, mob/user, params)
+	if(istype(I, /obj/item/organ) || istype(I, /obj/item/bodypart))
+		. = 1 //no afterattack
+		if(istype(I, /obj/item/organ/brain))
+			to_chat(user, "<span class='warning'>The machine won't recycle a brain!</span>")
+			return
+		else
+			if(!user.transferItemToLoc(I, src))
+				return
+			if(user.transferItemToLoc(I, src))
+				to_chat(user, "<span class='notice'>You add [I] to [src].</span>")
+				holdingitems[I] = TRUE
+				return FALSE
+
+
 	if(istype(I, /obj/item/reagent_containers/glass/plasma_canister))
 		. = 1 //no afterattack
 		if(plasma_canister)
@@ -196,49 +221,79 @@
 			user.put_in_hands(plasma_canister)
 		plasma_canister = null
 		user.visible_message("<span class='notice'>[user] removes the plasma canister from \the [src]</span>")
-	else
-		user.visible_message("<span class='notice'>[user] tries to remove something from \the [src] but nothing was there.")
+
+	if(!bonemeal_canister && !plasma_canister)
+		drop_all_items()
+		user.visible_message("<span class='notice'>[user] dumps out the \the [src]</span>")
 
 /obj/machinery/body_recycler/proc/startgrinding(mob/user)
 	if(src.operating)
 		return
-	if(!src.occupant)
+	if(!src.occupant && length(holdingitems) == 0)
 		visible_message("<span class='italics'>You hear a loud metallic grinding sound.</span>")
 		return
 	use_power(1000)
 	visible_message("<span class='italics'>You hear a loud squelchy grinding sound.</span>")
 	playsound(src.loc, 'sound/machines/juicer.ogg', 50, 1)
 	operating = TRUE
-	filthy = TRUE
 	update_icon()
 
-	var/offset = prob(50) ? -2 : 2
-	animate(src, pixel_x = pixel_x + offset, time = 0.2, loop = 200) //start shaking
 	var/mob/living/mob_occupant = occupant
-
-
-	var/list/datum/disease/diseases = mob_occupant.get_static_viruses()
+	var/list/datum/disease/diseases = mob_occupant?.get_static_viruses()
 	var/occupant_volume
 	if(occupant?.reagents)
 		occupant_volume = occupant.reagents.total_volume
 	if(occupant_volume)
 		occupant.reagents.trans_to(bonemeal_canister && plasma_canister, occupant_volume / 2, remove_blacklisted = FALSE) //Split the reagents between both canisters
 
+	for(var/i in holdingitems)
+		if(bonemeal_canister && bonemeal_canister.reagents.total_volume >= bonemeal_canister.reagents.maximum_volume)
+			break
+		if(plasma_canister && plasma_canister.reagents.total_volume >= plasma_canister.reagents.maximum_volume)
+			break
+		var/obj/item/I = i
+		if(I.grind_results)
+			if(istype(I, /obj/item/reagent_containers))
+				var/obj/item/reagent_containers/p = I
+				if(!p.prevent_grinding)
+					grind_item(p, user)
+			else
+				grind_item(I, user)
 
 
 
-
-	log_combat(user, occupant, "ground")
-	mob_occupant.death(1)
-	mob_occupant.ghostize()
+	if(occupant)
+		log_combat(user, occupant, "ground")
+	mob_occupant?.death(1)
+	mob_occupant?.ghostize()
 	qdel(src.occupant)
 	addtimer(CALLBACK(src, .proc/fill_canisters, diseases), grindtime)
 
-//Find a way to add diseases to the reagents inside the canistersbo
+/obj/machinery/body_recycler/proc/grind_item(obj/item/I, mob/user) //Grind results can be found in respective object definitions
+	if(I.on_grind(src) == -1) //Call on_grind() to change amount as needed, and stop grinding the item if it returns -1
+		to_chat(usr, "<span class='danger'>[src] shorts out as it tries to grind up [I], and transfers it back to storage.</span>")
+		return
+	if(istype(I, /obj/item/bodypart))
+		if(bonemeal_canister)
+			bonemeal_canister.reagents.add_reagent_list(I.grind_results)
+		else
+			visible_message("<span class='warning'>Without a canister, the machine oozes bonemeal all over the ground!</span>")
+			playsound(src.loc, 'sound/effects/splat.ogg', 50, 1)
+	if(istype(I, /obj/item/organ))
+		if(plasma_canister)
+			plasma_canister.reagents.add_reagent_list(I.grind_results)
+		else
+			visible_message("<span class='warning'>Without a canister, the machine gushes blood plasma all over the ground!</span>")
+			playsound(src.loc, 'sound/effects/splat.ogg', 50, 1)
+	if(I.reagents)
+		I.reagents.trans_to(bonemeal_canister, I.reagents.total_volume / 2, transfered_by = user)
+		I.reagents.trans_to(plasma_canister, I.reagents.total_volume / 2, transfered_by = user)
+	remove_object(I)
+
 
 //Make Dynamic limb/organ/body mincing for MORE CODING PAIN T-T try for(var/bodyparts in H.bodyparts)
 
-/obj/machinery/body_recycler/proc/fill_canisters()
+/obj/machinery/body_recycler/proc/fill_canisters(var/list/datum/disease/diseases)
 	if(bonemeal_canister)
 		bonemeal_canister.reagents.add_reagent(/datum/reagent/bonemeal, efficiency * 20)
 		if(filthy)
@@ -258,6 +313,12 @@
 	pixel_x = base_pixel_x //return to its spot after shaking
 	operating = FALSE
 	update_icon()
+	filthy = TRUE
+
+
+/obj/machinery/body_recycler/proc/remove_object(obj/item/O)
+	holdingitems -= O
+	qdel(O)
 
 /obj/item/circuitboard/machine/body_recycler
 	name = "body recycler (Machine Board)"

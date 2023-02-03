@@ -74,6 +74,8 @@
 	var/medium_burn_msg = "blistered"
 	var/heavy_burn_msg = "peeling away"
 
+	grind_results = list(/datum/reagent/bonemeal = 10)
+
 /obj/item/bodypart/Initialize(mapload)
 	..()
 	name = "[limb_id] [parse_zone(body_zone)]"

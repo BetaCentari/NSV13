@@ -25,6 +25,7 @@
 	var/now_fixed
 	var/high_threshold_cleared
 	var/low_threshold_cleared
+	grind_results = list(/datum/reagent/blood_plasma = 5) //NSV13
 
 /obj/item/organ/proc/Insert(mob/living/carbon/M, special = 0, drop_if_replaced = TRUE)
 	if(!iscarbon(M) || owner == M)

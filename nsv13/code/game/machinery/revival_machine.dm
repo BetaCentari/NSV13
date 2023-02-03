@@ -460,8 +460,8 @@
 	taste_description = "urple"
 	overdose_threshold = 30
 
-/datum/reagent/medicine/rapidoxadone/on_mob_life(mob/living/carbon/M) //add mood debuff
-	M.adjustToxLoss(1) //Trade 5 CLone Damage for half a tox damage
+/datum/reagent/medicine/rapidoxadone/on_mob_life(mob/living/carbon/M) //add mood debuff get_reagent_amount?
+	M.adjustToxLoss(1) //Trade 5 Clone Damage for a tox damage
 	M.adjustCloneLoss(-5)
 	M.disgust += 2.5
 	REMOVE_TRAIT(M, TRAIT_DISFIGURED, TRAIT_GENERIC) //fixes common causes for disfiguration
