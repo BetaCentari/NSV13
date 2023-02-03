@@ -119,6 +119,10 @@
 				. += "<span class='notice'>The recycler has been upgraded to process inorganic materials.</span>"
 
 /obj/machinery/body_recycler/attackby(obj/item/I, mob/user, params)
+	if(operating)
+		to_chat(user, "<span class='warning'>It's dangerous to stick your hand in a blending blender!")
+		return
+
 	if(istype(I, /obj/item/organ) || istype(I, /obj/item/bodypart))
 		. = 1 //no afterattack
 		if(istype(I, /obj/item/organ/brain))
@@ -208,12 +212,16 @@
 	..()
 
 /obj/machinery/body_recycler/AltClick(mob/user)
+	if(operating)
+		to_chat(user, "<span class='warning'>It's dangerous to stick your hand in a blending blender!")
+		return
 	if(bonemeal_canister)
 		bonemeal_canister.forceMove(drop_location())
 		if(Adjacent(user) && !issilicon(user))
 			user.put_in_hands(bonemeal_canister)
 		bonemeal_canister = null
 		user.visible_message("<span class='notice'>[user] removes the bonemeal canister from \the [src]</span>")
+		return
 
 	if(plasma_canister)
 		plasma_canister.forceMove(drop_location())
@@ -221,8 +229,9 @@
 			user.put_in_hands(plasma_canister)
 		plasma_canister = null
 		user.visible_message("<span class='notice'>[user] removes the plasma canister from \the [src]</span>")
+		return
 
-	if(!bonemeal_canister && !plasma_canister)
+	else
 		drop_all_items()
 		user.visible_message("<span class='notice'>[user] dumps out the \the [src]</span>")
 
@@ -258,16 +267,16 @@
 				if(!p.prevent_grinding)
 					grind_item(p, user)
 			else
-				grind_item(I, user)
-
-
+				addtimer(CALLBACK(src, .proc/grind_item, I), grindtime)
 
 	if(occupant)
 		log_combat(user, occupant, "ground")
-	mob_occupant?.death(1)
-	mob_occupant?.ghostize()
-	qdel(src.occupant)
-	addtimer(CALLBACK(src, .proc/fill_canisters, diseases), grindtime)
+		addtimer(CALLBACK(src, .proc/fill_canisters, diseases), grindtime)
+		mob_occupant?.death(1)
+		mob_occupant?.ghostize()
+		qdel(src.occupant)
+
+	addtimer(CALLBACK(src, .proc/end_grind), grindtime)
 
 /obj/machinery/body_recycler/proc/grind_item(obj/item/I, mob/user) //Grind results can be found in respective object definitions
 	if(I.on_grind(src) == -1) //Call on_grind() to change amount as needed, and stop grinding the item if it returns -1
@@ -294,7 +303,7 @@
 //Make Dynamic limb/organ/body mincing for MORE CODING PAIN T-T try for(var/bodyparts in H.bodyparts)
 
 /obj/machinery/body_recycler/proc/fill_canisters(var/list/datum/disease/diseases)
-	if(bonemeal_canister)
+	if(bonemeal_canister && occupant)
 		bonemeal_canister.reagents.add_reagent(/datum/reagent/bonemeal, efficiency * 20)
 		if(filthy)
 			bonemeal_canister.reagents.add_reagent(/datum/reagent/liquidgibs, 20)
@@ -302,7 +311,7 @@
 		visible_message("<span class='warning'>Without a canister, the machine oozes bonemeal all over the ground!</span>")
 		playsound(src.loc, 'sound/effects/splat.ogg', 50, 1)
 
-	if(plasma_canister)
+	if(plasma_canister && occupant)
 		plasma_canister.reagents.add_reagent(/datum/reagent/blood_plasma, efficiency * 20)
 		if(filthy)
 			plasma_canister.reagents.add_reagent(/datum/reagent/liquidgibs, 20)
@@ -310,11 +319,10 @@
 		visible_message("<span class='warning'>Without a canister, the machine gushes blood plasma all over the ground!</span>")
 		playsound(src.loc, 'sound/effects/splat.ogg', 50, 1)
 
-	pixel_x = base_pixel_x //return to its spot after shaking
+/obj/machinery/body_recycler/proc/end_grind()
 	operating = FALSE
 	update_icon()
 	filthy = TRUE
-
 
 /obj/machinery/body_recycler/proc/remove_object(obj/item/O)
 	holdingitems -= O

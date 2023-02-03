@@ -728,10 +728,6 @@
 	name = "telecomms server floor"
 	},
 /area/tcommsat/server)
-"dI" = (
-/obj/machinery/body_recycler,
-/turf/open/floor/plasteel/dark,
-/area/crew_quarters/bar)
 "dJ" = (
 /obj/effect/turf_decal/tile/blue,
 /obj/effect/turf_decal/tile/blue{
@@ -3087,6 +3083,10 @@
 	dir = 1
 	},
 /area/engine/engine_room)
+"mp" = (
+/obj/machinery/body_recycler,
+/turf/open/floor/plasteel/dark,
+/area/crew_quarters/bar)
 "ms" = (
 /turf/open/floor/monotile/dark,
 /area/hallway/secondary/entry)
@@ -6090,6 +6090,7 @@
 "zd" = (
 /obj/item/trash/can/food,
 /obj/machinery/dna_scannernew,
+/obj/effect/mob_spawn/human,
 /turf/open/floor/plasteel/dark,
 /area/crew_quarters/bar)
 "zf" = (
@@ -6467,12 +6468,6 @@
 	layer = 4.3
 	},
 /area/hallway/primary/fore)
-"AH" = (
-/obj/effect/mob_spawn/human/corpse,
-/turf/open/floor/plasteel/dark/side{
-	dir = 1
-	},
-/area/crew_quarters/bar)
 "AI" = (
 /obj/effect/turf_decal/ship/outline,
 /obj/structure/closet/crate,
@@ -7178,6 +7173,16 @@
 	dir = 1
 	},
 /area/hallway/primary/fore)
+"DO" = (
+/obj/machinery/atmospherics/components/unary/vent_scrubber/on/layer4{
+	dir = 1
+	},
+/obj/item/organ/liver,
+/obj/item/bodypart/r_arm,
+/turf/open/floor/plasteel/dark/side{
+	dir = 1
+	},
+/area/crew_quarters/bar)
 "DQ" = (
 /turf/closed/wall/r_wall,
 /area/maintenance/department/medical)
@@ -10615,6 +10620,12 @@
 /obj/structure/disposalpipe/segment,
 /turf/open/floor/plasteel/dark/side,
 /area/hallway/primary/central)
+"RL" = (
+/obj/effect/mob_spawn/human/corpse,
+/turf/open/floor/plasteel/dark/side{
+	dir = 1
+	},
+/area/crew_quarters/bar)
 "RN" = (
 /turf/closed/wall/r_wall,
 /area/crew_quarters/toilet/restrooms)
@@ -12239,10 +12250,6 @@
 /obj/effect/landmark/trader_drop_point,
 /turf/open/floor/monotile/dark,
 /area/quartermaster/warehouse)
-"Ye" = (
-/obj/effect/mob_spawn/human/corpse/assistant,
-/turf/open/floor/plasteel/dark,
-/area/crew_quarters/bar)
 "Yf" = (
 /obj/machinery/atmospherics/pipe/simple/supply/hidden/layer2{
 	dir = 4
@@ -12330,6 +12337,10 @@
 	},
 /turf/open/floor/monotile/dark,
 /area/hallway/primary/fore)
+"Yy" = (
+/obj/effect/mob_spawn/human/corpse/assistant,
+/turf/open/floor/plasteel/dark,
+/area/crew_quarters/bar)
 "Yz" = (
 /obj/machinery/atmospherics/pipe/simple/supply/hidden/layer2{
 	dir = 4
@@ -43418,8 +43429,8 @@ Ww
 Ww
 SE
 xl
-vI
-dI
+DO
+mp
 Ww
 Ys
 dV
@@ -43675,8 +43686,8 @@ SN
 Ww
 yE
 qm
-AH
-Ye
+RL
+Yy
 Gi
 dV
 dV
