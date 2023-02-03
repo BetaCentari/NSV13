@@ -13,8 +13,8 @@
 	speed_coeff = 20
 	fleshamnt = null
 	//New (old) materials required for cloning
-	var/bonemeal_req = 1
-	var/plasma_req = 1 //Reagent required is /datum/reagent/blood_plasma
+	var/bonemeal_req = 50
+	var/plasma_req = 50 //Reagent required is /datum/reagent/blood_plasma
 	var/obj/item/reagent_containers/glass/bonemeal_canister = null
 	var/obj/item/reagent_containers/glass/plasma_canister = null
 	var/filthy = 0
@@ -343,8 +343,7 @@
 	attempting = FALSE
 	return result
 
-//BUG FIX Figure out why it does it twice
-/obj/machinery/clonepod/revival/go_out() //Spits out the clone and determines complications alongside normal cloning problems
+/obj/machinery/clonepod/revival/go_out(move = TRUE) //Spits out the clone and determines complications alongside normal cloning problems
 	appearance_apgar = apgar_random()
 	pulse_apgar = apgar_random()
 	grimace_apgar = apgar_random()
@@ -390,8 +389,11 @@
 			say("Critical complications, recycle required.")
 		if(0)
 			say("Stillborn patient, recycle body immediately.")
-	. = ..()
 	filthy = TRUE //Clean out the machine every time it's used
+	..()
+
+/obj/machinery/clonepod/revival/Exited(atom/movable/AM, atom/newloc)
+	return
 
 /obj/item/reagent_containers/glass/plasma_canister
 	name = "blood plasma canister"

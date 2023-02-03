@@ -284,13 +284,13 @@
 		return
 	if(istype(I, /obj/item/bodypart))
 		if(bonemeal_canister)
-			bonemeal_canister.reagents.add_reagent_list(I.grind_results)
+			bonemeal_canister.reagents.add_reagent_list(I.grind_results * (efficiency / 2))
 		else
 			visible_message("<span class='warning'>Without a canister, the machine oozes bonemeal all over the ground!</span>")
 			playsound(src.loc, 'sound/effects/splat.ogg', 50, 1)
 	if(istype(I, /obj/item/organ))
 		if(plasma_canister)
-			plasma_canister.reagents.add_reagent_list(I.grind_results)
+			plasma_canister.reagents.add_reagent_list(I.grind_results * (efficiency / 2))
 		else
 			visible_message("<span class='warning'>Without a canister, the machine gushes blood plasma all over the ground!</span>")
 			playsound(src.loc, 'sound/effects/splat.ogg', 50, 1)
