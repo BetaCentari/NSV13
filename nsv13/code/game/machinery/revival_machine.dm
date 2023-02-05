@@ -8,7 +8,7 @@
 
 /obj/machinery/clonepod/revival
 	name = "revival machine"
-	desc = "An old revival machine from when cloning was first discovered. It smells metallic."
+	desc = "An old revival machine from when cloning was first invented. It smells metallic."
 	//Create new sprites, new sounds, animations
 	speed_coeff = 20
 	fleshamnt = null
@@ -17,9 +17,10 @@
 	var/plasma_req = 50 //Reagent required is /datum/reagent/blood_plasma
 	var/obj/item/reagent_containers/glass/bonemeal_canister = null
 	var/obj/item/reagent_containers/glass/plasma_canister = null
-	var/filthy = 0
+	var/filthy = FALSE
 
 	//Variables for potential health complications after cloning
+
 	var/complication = 10 //Don't ask me why this has to be 10
 	var/appearance_apgar = 0
 	var/pulse_apgar = 0
@@ -28,7 +29,7 @@
 	var/respiration_apgar = 0
 
 
-/obj/machinery/clonepod/revival/proc/apgar_random() //Add complication percentage that changes with better parts
+/obj/machinery/clonepod/revival/proc/apgar_random()
 	var/apgar_random = rand(complication*3, 50)
 	switch(apgar_random)
 		if(0 to 35)
@@ -38,7 +39,7 @@
 		if(46 to 50)
 			return 0
 
-/obj/machinery/clonepod/revival/RefreshParts()
+/obj/machinery/clonepod/revival/RefreshParts() //Change amount of materials required, investigate cloning speed
 	speed_coeff = 20
 	efficiency = 0
 	reagents.maximum_volume = 0
