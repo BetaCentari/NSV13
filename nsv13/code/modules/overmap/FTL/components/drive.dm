@@ -71,6 +71,11 @@
 	pylons = null
 	return ..()
 
+/obj/machinery/computer/ship/ftl_core/swarmer_act(mob/living/simple_animal/hostile/swarmer/S)
+	to_chat(S, "<span class='warning'>This equipment should be preserved, it will be a useful resource to our masters in the future. Aborting.</span>")
+	S.LoseTarget()
+	return FALSE
+
 /// Links with available pylons and returns number of connections
 /obj/machinery/computer/ship/ftl_core/proc/get_pylons()
 	var/obj/structure/overmap/OMcache = get_overmap()
@@ -306,6 +311,7 @@ Preset classes of FTL drive with pre-programmed behaviours
 		pylon_info["gyro"] = round(P.gyro_speed / P.req_gyro_speed, 0.01)
 		pylon_info["capacitor"] = round(P.capacitor / P.req_capacitor, 0.01)
 		pylon_info["draw"] = display_power(P.power_draw)
+		pylon_info["nucleium"] = round(P.get_nucleium_use() / 2, 0.01) //Converted into mol / second, SSmachines runs every 2 seconds.
 		pylon_info["shielded"] = P.shielded
 		all_pylon_info[++all_pylon_info.len] = pylon_info // Unfortunately, this is currently the best way to embed lists
 	data["pylons"] = all_pylon_info
@@ -318,7 +324,7 @@ Preset classes of FTL drive with pre-programmed behaviours
 	if(!target_system)
 		radio.talk_into(src, "ERROR. Specified star_system no longer exists.", radio_channel)
 		return
-	linked?.begin_jump(target_system, force)
+	linked.begin_jump(target_system, force)
 	playsound(src, 'nsv13/sound/voice/ftl_start.wav', 100, FALSE)
 	radio.talk_into(src, "Initiating FTL translation.", radio_channel)
 	playsound(src, 'nsv13/sound/effects/ship/freespace2/computer/escape.wav', 100, 1)
@@ -359,7 +365,7 @@ Preset classes of FTL drive with pre-programmed behaviours
 		for(var/obj/machinery/atmospherics/components/binary/drive_pylon/P as() in pylons)
 			P.set_state(PYLON_STATE_SHUTDOWN)
 	cooldown = TRUE
-	addtimer(CALLBACK(src, .proc/post_cooldown, auto_spool_enabled), FTL_COOLDOWN)
+	addtimer(CALLBACK(src, PROC_REF(post_cooldown), auto_spool_enabled), FTL_COOLDOWN)
 	STOP_PROCESSING(SSmachines, src)
 	return TRUE
 

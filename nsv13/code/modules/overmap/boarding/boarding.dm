@@ -34,7 +34,7 @@
 
 	//20 or more players? You're allowed "real" boarders.
 	if(player_check >= min_players_for_ghosts) // Remove the low pop boarder camping
-		candidates = pollCandidatesForMob("Do you want to play as a boarding team member?", ROLE_OPERATIVE, null, ROLE_OPERATIVE, 10 SECONDS, src)
+		candidates = pollCandidatesForMob("Do you want to play as a boarding team member?", ROLE_OPERATIVE, /datum/role_preference/midround_ghost/boarder, 10 SECONDS, src)
 	//No candidates? Well! Guess you get to deal with some KNPCs :))))))
 	if(!length(candidates))
 		return spawn_knpcs(amount, faction_selection)
@@ -91,6 +91,8 @@
 			knpc_types = list(/mob/living/carbon/human/ai_boarder/zombie,)
 		if("droid")
 			knpc_types = list(/mob/living/carbon/human/ai_boarder/boarding_droid,)
+		if("catgirl")
+			knpc_types = list(/mob/living/carbon/human/species/felinid/npc, /mob/living/carbon/human/ai_boarder/assistant/felinid)
 		else
 			message_admins("KNPC spawn failed. No knpcs configured for faction name \"[faction_selection]\".")
 			throw EXCEPTION("No knpcs configured for faction name \"[faction_selection]\"")
