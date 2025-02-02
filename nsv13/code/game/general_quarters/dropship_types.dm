@@ -73,7 +73,7 @@ Credit to TGMC for the interior sprites for all these!
 			starmap.linked = src
 
 // Z override for transports. This returns our aircraft's unique Z.
-/obj/structure/overmap/small_craft/transport/get_virtual_z_level()
+/obj/structure/overmap/small_craft/transport/proc/get_interior_virtual_z()
 	return linked_virtual_z != null ? linked_virtual_z : 0;
 
 /datum/map_template/dropship
@@ -189,7 +189,7 @@ Credit to TGMC for the interior sprites for all these!
 /obj/structure/overmap/small_craft/transport/sabre/syndicate
 	name = "\improper Syndicate Utility Vessel"
 	desc = "A boarding craft for rapid troop deployment. It contains a full combat medical bay for establishing FOBs."
-	icon = 'nsv13/icons/overmap/syndicate/syn_raptor.dmi'
+	icon = 'nsv13/icons/overmap/syndicate/syn_sabre.dmi'
 	req_one_access = list(ACCESS_SYNDICATE)
 	faction = "syndicate"
 	start_emagged = TRUE

@@ -241,6 +241,8 @@ Remember to update _globalvars/traits.dm if you're adding/removing/renaming trai
 #define TRAIT_SOMMELIER			"sommelier"  // shows different booze power flavor texts
 #define TRAIT_BARMASTER			"bar_master" // always can identify reagents
 #define TRAIT_HIVE_BURNT		 "hive-burnt"
+///Prevents natural body temperature stabilization.
+#define TRAIT_COLDBLOODED		"cold_blooded" //NSV13 species trait.
 
 // You can stare into the abyss, but it does not stare back.
 // You're immune to the hallucination effect of the supermatter, either
@@ -403,3 +405,8 @@ Remember to update _globalvars/traits.dm if you're adding/removing/renaming trai
 #define TRAIT_SUIT_SENSORS "suit_sensors"
 ///Mob is tracked by nanites, and on glob suit sensors list
 #define TRAIT_NANITE_SENSORS "nanite_sensors"
+
+//NSV13 traits
+#define TRAIT_NODAMPENERS "nodampeners" //! Prevents a ship with this trait from using dampeners.
+	#define TRAIT_SOURCE_OVERMAP_BLACKHOLE "overmap_singularity"
+//NSV13 traits end

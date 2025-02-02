@@ -246,6 +246,7 @@
 			if (!can_send_messages_to_other_sectors(usr))
 				return
 			if (!COOLDOWN_FINISHED(src, important_action_cooldown))
+				to_chat(usr, "<span class='alert'>Please stand by, transmitter in cooldown cycle</span>")
 				return
 
 			var/message = trim(html_encode(params["message"]), MAX_MESSAGE_LEN)
@@ -257,7 +258,7 @@
 
 			playsound(src, 'sound/machines/terminal_prompt_confirm.ogg', 50, FALSE)
 
-			SStopic.crosscomms_send("comms_console", message, station_name())
+			SStopic.crosscomms_send_async("comms_console", message, station_name())
 			minor_announce(message, title = "Outgoing message to allied station", html_encode = FALSE)
 			usr.log_talk(message, LOG_SAY, tag="message to the other server")
 			message_admins("[ADMIN_LOOKUPFLW(usr)] has sent a message to the other server.")

@@ -16,7 +16,7 @@
 	var/datum/star_system/selected_system = null
 	var/screen = STARMAP
 	var/can_control_ship = TRUE
-	var/current_sector = 2
+	var/current_sector = SECTOR_NEUTRAL
 	circuit = /obj/item/circuitboard/computer/ship/navigation
 
 /obj/machinery/computer/ship/navigation/LateInitialize()
@@ -27,9 +27,6 @@
 	if(user in linked?.operators)
 		return TRUE
 	return ..()
-
-/obj/machinery/computer/ship/navigation/ui_state(mob/user)
-	return GLOB.always_state
 
 /obj/machinery/computer/ship/navigation/public
 	name = "Starmap Console"
@@ -51,8 +48,8 @@
 		ui.set_autoupdate(TRUE)
 
 /obj/machinery/computer/ship/navigation/ui_act(action, params, datum/tgui/ui)
-	.=..()
-	if(isobserver(usr) && !IsAdminGhost(usr))
+	. = ..()
+	if(. && !IsAdminGhost(usr))
 		return
 	if(!linked)
 		return
@@ -154,11 +151,11 @@
 				if(system.is_hypergate)
 					label += " HYPERGATE"
 				if(system.is_capital && !label)
-					label = "CAPITAL"
-				if(system.trader && system.sector != 3) //Use shortnames in brazil for readability
-					label = " [system.trader.name]"
-				if(system.trader && system.sector == 3) //Use shortnames in brazil for readability
-					label = " [system.trader.shortname]"
+					label += "CAPITAL"
+				if(system.trader && system.sector != SECTOR_NEUTRAL) //Use shortnames in brazil for readability
+					label += " [system.trader.name]"
+				if(system.trader && system.sector == SECTOR_NEUTRAL) //Use shortnames in brazil for readability
+					label += " [system.trader.shortname]"
 				if(system.mission_sector)
 					label += " OCCUPIED"
 				if(system.objective_sector)

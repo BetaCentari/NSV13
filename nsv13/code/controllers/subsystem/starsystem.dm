@@ -26,7 +26,13 @@ SUBSYSTEM_DEF(star_system)
 	var/obj/structure/overmap/mining_ship = null //The mining ship
 	var/saving = FALSE
 
+	///Kind of cursed list that tracks which of our overmap interiors have been initialized yet.
+	var/list/overmap_interior_queue = list() //Ratvar save me from this.
+	///Are we already busy?
+	var/initing_interior = FALSE
+
 /datum/controller/subsystem/star_system/fire() //Overmap combat events control system, adds weight to combat events over time spent out of combat
+	handle_interior_inits() //Cursed. I don't like this.
 	if(time_limit && world.time >= time_limit)
 		var/datum/faction/winner = get_winner()
 		if(istype(SSticker.mode, /datum/game_mode/pvp))
@@ -70,6 +76,25 @@ SUBSYSTEM_DEF(star_system)
 		save()
 		saving = FALSE
 	. = ..()
+
+///Absolutely cursed proc handling ship interior init queues.
+/datum/controller/subsystem/star_system/proc/handle_interior_inits()
+	set waitfor = FALSE
+	if(initing_interior)
+		return
+	if(SSatoms.initialized_changed)
+		return
+	if(!length(overmap_interior_queue))
+		return
+	initing_interior = TRUE
+	var/obj/structure/overmap/shipinterior_candidate = overmap_interior_queue[1]
+	shipinterior_candidate.instance_interior()
+	SEND_SIGNAL(shipinterior_candidate, COMSIG_INTERIOR_DONE_LOADING)
+	overmap_interior_queue -= shipinterior_candidate
+	initing_interior = FALSE
+
+/datum/controller/subsystem/star_system/proc/queue_for_interior_load(obj/structure/overmap/to_interior_load)
+	overmap_interior_queue += to_interior_load
 
 /**
 Returns a faction datum by its name (case insensitive!)
@@ -125,7 +150,7 @@ Returns a faction datum by its name (case insensitive!)
 				owner = sys_info["owner"],
 				hidden = sys_info["hidden"],
 				sector = sys_info["sector"],
-				adjacency_list = json_decode(sys_info["adjacency_list"]),
+				adjacency_list = json_decode(sys_info["adjacency_list"]) || list(),
 				//Optional props. Recommended, but can be left blank.
 				threat_level = LAZYACCESS(sys_info, "threat_level") || THREAT_LEVEL_NONE,
 				is_capital = LAZYACCESS(sys_info, "is_capital") || FALSE,
@@ -143,7 +168,7 @@ Returns a faction datum by its name (case insensitive!)
 			)
 			systems += next
 		}
-		catch(var/exception/e){
+		catch(var/exception/e){ //Please avoid using trycatch, you CANNOT debug try-catch. It's doesn't RUNTIME TRACK trycatch. Breakpoints do not trigger in trycatch. Fix runtimes or failure proof the system instead so nobody has to manually tear apart the trycatch while debugging.
 			message_admins("WARNING: Invalid star system in json: [sys_info["name"]] ([e]). Skipping...")
 			continue
 		}
@@ -184,13 +209,7 @@ Returns a faction datum by its name (case insensitive!)
 	for(var/datum/star_system/S in systems)
 		if(S == null || istype(S, /datum/star_system/random))
 			continue
-		var/list/initial_adjacency_list = initial(S.adjacency_list) //Don't copy adjacency changes from wormholes or badmins (this is just a lazy fix right now)
-		var/list/adjusted_adjacency_list = initial_adjacency_list.Copy()
-		//Don't cache randomized systems in adjacency matrices.
-		for(var/system_name in adjusted_adjacency_list)
-			var/datum/star_system/SS = system_by_id(system_name)
-			if(istype(SS, /datum/star_system/random))
-				adjusted_adjacency_list.Remove(system_name)
+		var/list/adjusted_adjacency_list = S.initial_adjacencies.Copy() //Don't copy adjacency changes from wormholes or badmins
 		/*var/list/adjusted_wormhole_connections = S.wormhole_connections.Copy() Not saving this right now, since wormholes spawn randomly
 		for(var/system_name in adjusted_wormhole_connections)
 			var/datum/star_system/SS = system_by_id(system_name)
@@ -209,7 +228,7 @@ Returns a faction datum by its name (case insensitive!)
 			"system_traits"=isnum(S.system_traits) ? S.system_traits : NONE,
 			"is_capital"=S.is_capital,
 			"adjacency_list"=json_encode(adjusted_adjacency_list),
-			"wormhole_connections"=S.wormhole_connections,
+			"wormhole_connections"=/*json_encode(S.wormhole_connections)*/json_encode(list()), //If you want to to have mapped wormholes stay, copy how I do adjacency lists or tell me. Do not initial and do not preserve random ones like it would if I just fixed the saving. -Delta
 			"fleet_type" = S.fleet_type,
 			//Coords, props.
 			"x" = S.x,
@@ -259,6 +278,7 @@ Returns a faction datum by its name (case insensitive!)
 		if(sys.name == id)
 			return sys
 
+///AVOID using this if possible, go by the objects current_system var if you can. Do not trust the weird ships[] list unless you HAVE to (e.g. you haven't set the system yet)
 /datum/controller/subsystem/star_system/proc/find_system(obj/O) //Used to determine what system a ship is currently in. Famously used to determine the starter system that you've put the ship in.
 	var/datum/star_system/system
 	if(isovermap(O))
@@ -276,7 +296,6 @@ Returns a faction datum by its name (case insensitive!)
 	return system
 
 /datum/controller/subsystem/star_system/proc/spawn_ship(obj/structure/overmap/OM, datum/star_system/target_sys, center=FALSE)//Select Ship to Spawn and Location via Z-Trait
-	target_sys.system_contents += OM
 	if(target_sys.occupying_z)
 		var/turf/destination = null
 		if(center)
@@ -303,7 +322,7 @@ Returns a faction datum by its name (case insensitive!)
 		if(backupx && backupy)
 			target.contents_positions[OM] = list("x" = backupx, "y" = backupy) //Cache the ship's position so we can regenerate it later.
 		else
-			target.contents_positions[OM] = list("x" = rand(15, 240), "y" = rand(15, 240))
+			target.contents_positions[OM] = list("x" = rand(15, world.maxx - 15), "y" = rand(15, world.maxy - 15))
 	else
 		if(!OM.z)
 			START_PROCESSING(SSphysics_processing, OM)
@@ -361,9 +380,13 @@ Returns a faction datum by its name (case insensitive!)
 			highestTickets = F.tickets
 	return winner
 
-/datum/controller/subsystem/star_system/proc/add_ship(obj/structure/overmap/OM, turf/target)
+/datum/controller/subsystem/star_system/proc/add_ship(obj/structure/overmap/OM, turf/target, datum/star_system/system_override)
 	ships[OM] = list("ship" = OM, "x" = 0, "y" = 0, "current_system" = system_by_id(OM.starting_system), "last_system" = system_by_id(OM.starting_system), "target_system" = null, "from_time" = 0, "to_time" = 0, "occupying_z" = OM.z)
-	var/datum/star_system/curr = ships[OM]["current_system"]
+	var/datum/star_system/curr
+	if(!system_override)
+		curr = ships[OM]["current_system"]
+	else
+		curr = system_override
 	curr.add_ship(OM, target)
 
 //Welcome to bracket hell.
@@ -384,6 +407,24 @@ Returns a faction datum by its name (case insensitive!)
 	if(info["current_system"])
 		return FALSE
 	return (world.time - info["from_time"])/(info["to_time"] - info["from_time"])
+
+/datum/controller/subsystem/star_system/proc/dolos_visited(datum/star_system/source, obj/structure/overmap/entering)
+	SIGNAL_HANDLER
+	if(entering.ai_controlled)
+		return
+	for(var/mob/living/visitor in entering.mobs_in_ship)
+		if(!visitor.client)
+			continue
+		INVOKE_ASYNC(visitor.client, TYPE_PROC_REF(/client, give_award), /datum/award/achievement/misc/crew_extremely_competent, visitor)
+
+/datum/controller/subsystem/star_system/proc/abassi_visited(datum/star_system/source, obj/structure/overmap/entering)
+	SIGNAL_HANDLER
+	if(entering.ai_controlled)
+		return
+	for(var/mob/living/visitor in entering.mobs_in_ship)
+		if(!visitor.client)
+			continue
+		INVOKE_ASYNC(visitor.client, TYPE_PROC_REF(/client, give_award), /datum/award/achievement/misc/crew_hypercompetent, visitor)
 
 //////star_system DATUM///////
 
@@ -421,6 +462,8 @@ Returns a faction datum by its name (case insensitive!)
 	var/system_traits = NONE
 	var/is_capital = FALSE
 	var/list/adjacency_list = list() //Which systems are near us, by name
+	///List of adjacencies this system started with. Should never be edited. Cannot be initialed due to the json loading to system adjacencies.
+	var/list/initial_adjacencies = list()
 	var/occupying_z = 0 //What Z-level is this  currently stored on? This will always be a number, as Z-levels are "held" by ships.
 	var/list/wormhole_connections = list() //Where did we dun go do the wormhole to honk
 	var/fleet_type = null //Wanna start this system with a fleet in it?
@@ -446,8 +489,18 @@ Returns a faction datum by its name (case insensitive!)
 		if("STARTUP_PROC_TYPE_BRASIL_LITE")
 			addtimer(CALLBACK(src, PROC_REF(generate_litelands)), 5 SECONDS)
 			return
+		if("STARTUP_PROC_TYPE_DOLOS")
+			addtimer(CALLBACK(src, PROC_REF(register_dolos_achievement)), 5 SECONDS)
+		if("STARTUP_PROC_TYPE_ABASSI")
+			addtimer(CALLBACK(src, PROC_REF(register_abassi_achievement)), 5 SECONDS)
 	message_admins("WARNING: Invalid startup_proc declared for [name]! Review your defines (~L438, starsystem.dm), please.")
 	return 1
+
+/datum/star_system/vv_edit_var(var_name, var_value)
+	var/list/banned_edits = list(NAMEOF(src, initial_adjacencies))
+	if(var_name in banned_edits)
+		return FALSE	//Don't you dare break the json.
+	return ..()
 
 /datum/star_system/New(name, desc, threat_level, alignment, owner, hidden, system_type, system_traits, is_capital, adjacency_list, wormhole_connections, fleet_type, x, y, parallax_property, visitable, sector, is_hypergate, preset_trader, audio_cues, startup_proc)
 	. = ..()
@@ -471,7 +524,9 @@ Returns a faction datum by its name (case insensitive!)
 	if(is_capital)
 		src.is_capital = is_capital
 	if(adjacency_list)
-		src.adjacency_list = adjacency_list
+		var/list/cast_adjacency_list = adjacency_list
+		src.adjacency_list = cast_adjacency_list
+		src.initial_adjacencies = cast_adjacency_list.Copy()
 	if(wormhole_connections)
 		src.wormhole_connections = wormhole_connections
 	if(fleet_type)
@@ -563,13 +618,15 @@ Returns a faction datum by its name (case insensitive!)
 	var/scanned = FALSE
 	var/specialist_research_type = null //Special techweb node unlocking.
 
-/obj/effect/overmap_anomaly/Initialize(mapload)
+/obj/effect/overmap_anomaly/Initialize(mapload, system)
 	. = ..()
 	var/static/list/loc_connections = list(
 		COMSIG_ATOM_ENTERED = PROC_REF(on_entered),
 	)
 	AddElement(/datum/element/connect_loc, loc_connections)
 	GLOB.overmap_anomalies += src
+	if(system)
+		current_system = system
 
 /obj/effect/overmap_anomaly/proc/on_entered(datum/source, atom/movable/AM)
 	SIGNAL_HANDLER
@@ -598,6 +655,11 @@ Returns a faction datum by its name (case insensitive!)
 	pixel_y = -64
 	specialist_research_type = TECHWEB_POINT_TYPE_WORMHOLE
 
+#define OVERMAP_SINGULARITY_PROX_GRAVITY 2
+#define OVERMAP_SINGULARITY_REDSHIFT_GRAV 3.5
+#define OVERMAP_SINGULARITY_DANGER_GRAV 5
+#define OVERMAP_SINGULARITY_DEATH_GRAV 40
+
 /obj/effect/overmap_anomaly/singularity
 	name = "Black hole"
 	desc = "A peek into the void between worlds. These stellar demons consume everything in their path. Including you. Scanning this singularity could lead to groundbreaking discoveries in the field of quantum physics!"
@@ -606,65 +668,121 @@ Returns a faction datum by its name (case insensitive!)
 	research_points = 20000 //These things are pretty damn valuable, for their risk of course.
 	pixel_x = -64
 	pixel_y = -64
+	///Overmap objects currently being in range of the black hole
 	var/list/affecting = list()
+	///Assoc list that tracks which grav we already made the ship suffer
+	var/list/grav_tracker = list()
+	///Previous colors of overmaps before being discolored, to preserve fighters
 	var/list/cached_colours = list()
-	var/event_horizon_range = 15 //Point of no return. Getting this close will require an emergency FTL jump or shuttle call.
+	///Range closer than which things get a lot more dangerous.
+	var/event_horizon_range = 15
+	///Range closer than which starts discoloring everything into red
 	var/redshift_range = 30
-	var/influence_range = 100
-	var/base_pull_strength = 0.10
+	///Total range of the black hole influence
+	var/influence_range = 90 //Slightly less since it loops now.
+	///Gravity pull when being close
+	var/inner_pull_strength = 0.2 //Somewhat more since the vectors get correctly calced now.
+	///Gravity pull while far away
+	var/outer_pull_strength = 0.1
 
 /obj/effect/overmap_anomaly/singularity/Initialize(mapload)
 	. = ..()
 	START_PROCESSING(SSfastprocess, src)
 
 /obj/effect/overmap_anomaly/singularity/process()
-	if(!z) //Not in nullspace
+	if(!z || !current_system) //Not in nullspace
 		if(length(affecting))
 			for(var/obj/structure/overmap/OM in affecting)
 				stop_affecting(OM)
 		return
-	for(var/obj/structure/overmap/OM as() in GLOB.overmap_objects) //Has to go through global overmaps due to anomalies not referencing their system - probably something to change one day.
+	for(var/obj/structure/overmap/OM in current_system.system_contents) //This list is not exclusively overmaps so no as() calls.
 		if(LAZYFIND(affecting, OM))
 			continue
-		if(get_dist(src, OM) <= influence_range && OM.z == z)
+		if(OM.z != z)
+			continue
+		if(overmap_dist(src, OM) <= influence_range)
 			affecting += OM
+			grav_tracker[OM] = 0
 			cached_colours[OM] = OM.color //So that say, a yellow fighter doesnt get its paint cleared by redshifting
 			OM.relay(S='nsv13/sound/effects/ship/falling.ogg', message="<span class='warning'>You feel weighed down.</span>", loop=TRUE, channel=CHANNEL_HEARTBEAT)
+			ADD_TRAIT(OM, TRAIT_NODAMPENERS, TRAIT_SOURCE_OVERMAP_BLACKHOLE)
+			OM.disable_dampeners()
+			RegisterSignal(OM, COMSIG_PARENT_QDELETING, PROC_REF(handle_affecting_del))
 	for(var/obj/structure/overmap/OM as() in affecting)
-		if(get_dist(src, OM) > influence_range || !z || OM.z != z)
+		var/dist = overmap_dist(src, OM)
+		if(dist > influence_range || !z || OM.z != z)
 			stop_affecting(OM)
 			continue
-		var/incidence = get_dir(OM, src)
-		var/dist = get_dist(src, OM)
+		var/grav_level = OVERMAP_SINGULARITY_PROX_GRAVITY
 		if(dist <= redshift_range)
 			var/redshift ="#[num2hex(130-dist,2)][num2hex(0,2)][num2hex(0,2)]"
 			OM.color = redshift
 			for(var/mob/M in OM.mobs_in_ship)
 				M?.client?.color = redshift
+			grav_level = OVERMAP_SINGULARITY_REDSHIFT_GRAV
+			if(dist < event_horizon_range) //This var name kind of lies since the event horizon is actually at dist 2. I guess this is just the "it gets serious" distance.
+				grav_level = OVERMAP_SINGULARITY_DANGER_GRAV
+		else
+			if(grav_tracker[OM] >= OVERMAP_SINGULARITY_REDSHIFT_GRAV)
+				OM.color = cached_colours[OM] //Reset color, do not reset cache since we are still in proximity.
+				for(var/mob/M in OM.mobs_in_ship)
+					M?.client?.color = null
 		if(dist <= 2)
-			affecting -= OM
-			OM.current_system?.remove_ship(OM)
+			OM.current_system?.remove_ship(OM, is_ftl_jump = FALSE)
+			for(var/area/crushed as() in OM.linked_areas)
+				if(istype(crushed, /area/space))
+					continue
+				crushed.has_gravity = OVERMAP_SINGULARITY_DEATH_GRAV //You are dead.
+			grant_death_achievement(OM)
 			qdel(OM)
+			continue
+		if(grav_tracker[OM] != grav_level)
+			for(var/area/crushed as() in OM.linked_areas)
+				if(istype(crushed, /area/space))
+					continue
+				crushed.has_gravity = grav_level
+				grav_tracker[OM] = grav_level
 		dist = (dist > 0) ? dist : 1
-		var/pull_strength = (dist > event_horizon_range) ? 0.005 : base_pull_strength
-		var/succ_impulse = !OM.brakes ? pull_strength/dist*dist : (OM.forward_maxthrust / 10) + (pull_strength/dist*dist) //STOP RESISTING THE SUCC
-		if(incidence & NORTH)
-			OM.velocity.e += succ_impulse
-		if(incidence & SOUTH)
-			OM.velocity.e -= succ_impulse
-		if(incidence & EAST)
-			OM.velocity.a += succ_impulse
-		if(incidence & WEST)
-			OM.velocity.a -= succ_impulse
+		var/pull_strength = (dist > event_horizon_range) ? outer_pull_strength : inner_pull_strength
+		var/succ_impulse = !OM.brakes ? pull_strength/dist*dist : (OM.forward_maxthrust / 10) + (pull_strength/dist*dist) //STOP RESISTING THE SUCC - is this meant to be inverse square? Missing a () in that case.. probably more 'fun' this way though since very low velocities get zerod - Delta.
+		var/relative_angle = overmap_angle(OM, src) % 360
+		var/x_succ = (succ_impulse * sin(relative_angle)) //I LOVE circle math I LOVE pi. (these two lines get the x and y component of the gravity vector)
+		var/y_succ = (succ_impulse * cos(relative_angle))
+		OM.velocity.a += x_succ
+		OM.velocity.e += y_succ
 
 /obj/effect/overmap_anomaly/singularity/proc/stop_affecting(obj/structure/overmap/OM = null)
 	if(OM)
 		affecting -= OM
+		REMOVE_TRAIT(OM, TRAIT_NODAMPENERS, TRAIT_SOURCE_OVERMAP_BLACKHOLE)
 		OM.stop_relay(CHANNEL_HEARTBEAT)
 		OM.color = cached_colours[OM]
 		cached_colours[OM] = null
 		for(var/mob/M in OM.mobs_in_ship)
 			M?.client?.color = null
+		for(var/area/crushed as() in OM.linked_areas)
+			if(istype(crushed, /area/space))
+				continue
+			crushed.has_gravity = initial(crushed.has_gravity)
+		grav_tracker -= OM
+		UnregisterSignal(OM, COMSIG_PARENT_QDELETING)
+
+/obj/effect/overmap_anomaly/singularity/proc/handle_affecting_del(obj/structure/overmap/deleting)
+	affecting -= deleting
+	grav_tracker -= deleting
+	cached_colours[deleting] = null
+	UnregisterSignal(deleting, COMSIG_PARENT_QDELETING)
+
+/obj/effect/overmap_anomaly/singularity/proc/grant_death_achievement(obj/structure/overmap/congratulations)
+	for(var/mob/living/nice_job in congratulations.mobs_in_ship)
+		if(!nice_job.client)
+			continue
+		nice_job.client.give_award(/datum/award/achievement/misc/blackhole_incident, nice_job)
+
+#undef OVERMAP_SINGULARITY_PROX_GRAVITY
+#undef OVERMAP_SINGULARITY_REDSHIFT_GRAV
+#undef OVERMAP_SINGULARITY_DANGER_GRAV
+#undef OVERMAP_SINGULARITY_DEATH_GRAV
 
 /obj/effect/overmap_anomaly/wormhole/Initialize(mapload)
 	. = ..()
@@ -747,6 +865,8 @@ Returns a faction datum by its name (case insensitive!)
 			SSstar_system.spawn_anomaly(/obj/effect/overmap_anomaly/wormhole, src, center=TRUE)
 	if(alignment == "syndicate")
 		spawn_enemies() //Syndicate systems are even more dangerous, and come pre-loaded with some Syndie ships.
+		if(prob(20)) //Watch your step!
+			spawn_mines("syndicate")
 	if(alignment == "unaligned")
 		if(prob(25))
 			spawn_enemies()
@@ -834,10 +954,26 @@ Returns a faction datum by its name (case insensitive!)
 /datum/star_system/proc/spawn_enemies(enemy_type, amount)
 	if(!amount)
 		amount = difficulty_budget
+		if(amount <= 0)
+			amount = 1 //Why else are you calling this?
 	for(var/i = 0, i < amount, i++) //number of enemies is set via the star_system vars
 		if(!enemy_type)
 			enemy_type = pick(SSstar_system.enemy_types) //Spawn a random set of enemies.
 		SSstar_system.spawn_ship(enemy_type, src)
+
+/datum/star_system/proc/spawn_mines(faction, amount)
+	if(!amount)
+		amount = difficulty_budget*2
+		if(amount <= 0)
+			amount = 1 //Why else are you calling this?
+	if(!faction) //Someone forgot to set their IFF
+		faction = alignment
+	if(!occupying_z) //We didn't get one
+		for(var/i = 0, i < amount, i++)
+			var/obj/structure/space_mine/M = new /obj/structure/space_mine(null, faction, src) //You are in nullspace now
+			contents_positions[M] = list("x" = rand(5, world.maxx - 5),"y" = rand(5, world.maxy - 5))
+	for(var/i = 0, i < amount, i++)
+		new /obj/structure/space_mine(get_turf(locate(rand(5, world.maxx - 5), rand(5, world.maxy - 5), occupying_z)), faction, src) //random location in the system
 
 /datum/star_system/proc/lerp_x(datum/star_system/other, t)
 	return x + (t * (other.x - x))
@@ -1487,6 +1623,17 @@ Random starsystem. Excluded from starmap saving, as they're generated at init.
 #undef RANDOM_CONNECTION_REPEAT_PENALTY
 
 /*
+These are used to check if someone is visiting one of the special systems.
+Handled this way and done on the starsystem controller so we do not conflict with other signals that rely on star systems registering a signal onto themselves.
+*/
+
+/datum/star_system/proc/register_dolos_achievement()
+	SSstar_system.RegisterSignal(src, COMSIG_STAR_SYSTEM_AFTER_ENTER, TYPE_PROC_REF(/datum/controller/subsystem/star_system, dolos_visited))
+
+/datum/star_system/proc/register_abassi_achievement()
+	SSstar_system.RegisterSignal(src, COMSIG_STAR_SYSTEM_AFTER_ENTER, TYPE_PROC_REF(/datum/controller/subsystem/star_system, abassi_visited))
+
+/*
 <Summary>
 Welcome to the endgame. This sector is the hardest you'll encounter in game and holds the Syndicate capital.
 </Summary>
@@ -1548,6 +1695,7 @@ Welcome to the endgame. This sector is the hardest you'll encounter in game and 
 	hidden = FALSE
 	desc = "A place where giants fell. You feel nothing save for an odd sense of unease and an eerie silence."
 	system_traits = STARSYSTEM_NO_ANOMALIES | STARSYSTEM_NO_WORMHOLE
+	startup_proc = "STARTUP_PROC_TYPE_DOLOS"
 
 /datum/star_system/sector4/abassi
 	name = "Abassi"
@@ -1563,6 +1711,7 @@ Welcome to the endgame. This sector is the hardest you'll encounter in game and 
 	threat_level = THREAT_LEVEL_DANGEROUS
 	hidden = TRUE
 	system_traits = STARSYSTEM_NO_ANOMALIES | STARSYSTEM_NO_WORMHOLE
+	startup_proc = "STARTUP_PROC_TYPE_ABASSI"
 
 /datum/star_system/sector4/laststand
 	name = "Oasis Fidei" //oasis of faith

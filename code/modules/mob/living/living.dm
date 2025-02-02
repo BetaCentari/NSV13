@@ -32,6 +32,11 @@
 				qdel(S)
 			else
 				S.be_replaced()
+	//NSV13 - stop runtiming
+	if(registered_z)
+		SSmobs.clients_by_zlevel[registered_z] -= src
+		registered_z = null
+	//NSV13 end
 	if(ranged_ability)
 		ranged_ability.remove_ranged_ability(src)
 	if(buckled)
@@ -566,6 +571,10 @@
 			for(var/S in mind.spell_list)
 				var/obj/effect/proc_holder/spell/spell = S
 				spell.updateButtonIcon()
+		//NSV13 - clear that popup.
+		if(client)
+			client.tgui_panel?.clear_dead_popup()
+		//NSV13 end.
 
 /mob/living/proc/remove_CC(should_update_mobility = TRUE)
 	SetStun(0, FALSE)
@@ -1162,7 +1171,18 @@
 			if(buckled.buckle_lying != -1)
 				lying = buckled.buckle_lying
 		if(!lying) //force them on the ground
-			lying = pick(90, 270)
+			//NSV13 - you get to choose if it's controlled.
+			if(!resting)
+				lying = pick(90, 270)
+			else
+				switch(dir)
+					if(WEST)
+						lying = 270
+					if(EAST)
+						lying = 90
+					else
+						lying = pick(90, 270)
+			//NSV13 end.
 	else
 		mobility_flags |= MOBILITY_STAND
 		lying = 0
