@@ -10,10 +10,10 @@ SQL_ENABLED
 ADDRESS 127.0.0.1
 
 ## MySQL server port (default is 3306).
-PORT 3306
+PORT 30003
 
 ## Database for all SQL functions, not just feedback.
-FEEDBACK_DATABASE nsv13
+FEEDBACK_DATABASE nsv-sg
 
 ## Prefix to be added to the name of every table, older databases will require this be set to erro_
 ## Note, this does not change the table names in the database, you will have to do that yourself.
@@ -24,10 +24,10 @@ FEEDBACK_DATABASE nsv13
 FEEDBACK_TABLEPREFIX SS13_
 
 ## Username/Login used to access the database.
-FEEDBACK_LOGIN nsv13
+FEEDBACK_LOGIN Sophie Garnier
 
 ## Password used to access the database.
-FEEDBACK_PASSWORD password1
+FEEDBACK_PASSWORD Bl!zzard97
 
 ## Time in seconds for asynchronous queries to timeout
 ## Set to 0 for infinite
