@@ -634,6 +634,15 @@ Misc projectile types, effects, think of this as the special FX file.
 	armour_penetration = 10
 	speed = 0.4
 
+/obj/item/projectile/bullet/chaingun
+	name = "chaingun bullet"
+	icon = 'nsv13/icons/obj/projectiles_nsv.dmi'
+	icon_state = "chaingun"
+	damage = 0.1
+	flag = "overmap_light"
+	spread = 0
+	speed = 5
+
 /obj/effect/temp_visual/overmap_explosion
 	icon = 'nsv13/goonstation/icons/hugeexplosion.dmi'
 	icon_state = "explosion"
