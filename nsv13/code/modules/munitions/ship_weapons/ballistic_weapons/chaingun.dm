@@ -78,7 +78,7 @@
 	desc = "Type writer soundin' mf" //placeholder
 	req_components = list(
 		/obj/item/stack/sheet/iron = 30,
-		/obj/item/cable_coil = 5,
+		/obj/item/stack/cable_coil = 5,
 		/obj/item/stock_parts/manipulator = 10,
 		/obj/item/stock_parts/matter_bin = 2,
 	)
@@ -126,7 +126,7 @@
 	desc = "chain holding lookin' mf" //placeholder
 	req_components = list(
 		/obj/item/stack/sheet/iron = 20,
-		/obj/item/cable_coil = 5,
+		/obj/item/stack/cable_coil = 5,
 		/obj/item/stock_parts/manipulator = 4,
 		/obj/item/stock_parts/matter_bin = 10,
 	)
@@ -174,7 +174,7 @@
 	desc = "spinny winny lookin' mf" //placeholder
 	req_components = list(
 		/obj/item/stack/sheet/iron = 50,
-		/obj/item/cable_coil = 5,
+		/obj/item/stack/cable_coil = 5,
 		/obj/item/stock_parts/manipulator = 10,
 		/obj/item/stock_parts/scanning_module = 5,
 		/obj/item/stock_parts/micro_laser = 1,
@@ -324,13 +324,13 @@
 /obj/machinery/ship_weapon/chaingun/proc/open_hatch()
 	if(!chaingun_chair || chaingun_chair.loc != src)
 		return FALSE
-//	var/turf/chair = SSmapping.get_turf_below(src) //need to change: get the turf the chair is on, we don't wanna throw people into voids
-//	chaingun_chair.forceMove(below)
+	var/turf/chair = get_offset_target_turf(src, 1, 1) //need to change: get the turf the chair is on, we don't wanna throw people into voids
+	chaingun_chair.forceMove(chair)
 	chaingun_chair.locked = TRUE
 	var/mob/living/M = gunner
-//	M.forceMove(below)
+	M.forceMove(chair)
 	chaingun_chair.buckle_mob(M)
-//	below.visible_message("<span class='notice'>The hatch hisses open!</span>")
+	visible_message("<span class='notice'>The hatch hisses open!</span>")
 	M.alpha = 0
 	chaingun_chair.alpha = 0
 	chaingun_chair.locked = FALSE //Ok. Feel free to move again.
