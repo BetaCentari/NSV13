@@ -31,8 +31,10 @@
 //	chamber_delay =
 
 	var/mob/gunner = null
+	var/occupied = FALSE
 
-	var/obj/structure/chair/fancy/chaingun/chaingun_chair = null
+	var/list/chaingun_verbs = list(.verb/show_computer, .verb/show_view)
+
 	var/obj/machinery/chaingun_cycler
 	var/obj/machinery/chaingun_loading_hopper
 	var/obj/machinery/chaingun_gyroscope
@@ -60,6 +62,30 @@
 		return QDEL_HINT_LETMELIVE
 	GLOB.critical_muni_items -= src
 	return ..()
+
+/obj/machinery/ship_weapon/chaingun/Destroy() //Yeet them out before we die.
+	remove_chaingunner()
+	return ..()
+
+/obj/machinery/ship_weapon/chaingun/verb/show_computer()
+	set name = "Access internal computer"
+	set category = "Chaingun"
+	set src = usr.loc
+
+	if(gunner.incapacitated() || !isliving(gunner))
+		return
+	ui_interact(gunner)
+	to_chat(gunner, "<span class='notice'>You reach for [src]'s control panel.</span>")
+
+/obj/machinery/ship_weapon/chaingun/verb/show_view()
+	set name = "Access gun camera"
+	set category = "Chaingun"
+	set src = usr.loc
+
+	if(usr.incapacitated())
+		return
+	set_chaingunner(usr)
+	to_chat(gunner, "<span class='notice'>You reach for [src]'s gun camera controls.</span>")
 
 /obj/machinery/chaingun_cycler
 	name = "\improper Mechanical Chaingun Cycler"
@@ -237,13 +263,40 @@
 	else
 		. += "The maintenance panel is <b>closed</b> and could be <i>screwed open</i>."
 
-/obj/structure/chair/fancy/chaingun
-	name = "Chaingunner chair"
-	desc = "A capsule-like seat for the gunner to sit in, the Empire nicknamed them death eggs. Sounds better in draconic" //placeholder?
-	icon = 'nsv13/icons/obj/chairs.dmi'
-	icon_state = "shuttle_chair" //placeholder
-	item_chair = null
-	buildstackamount = 10
-	var/locked = FALSE
-	var/obj/machinery/ship_weapon/chaingun/gun
-	var/mob/living/occupant
+/obj/machinery/ship_weapon/chaingun/MouseDrop_T(obj/machinery/A, mob/user)
+	if(!isliving(user))
+		return FALSE
+	if(occupied)
+		to_chat(user, "<span class='warning'>The [src] is already occupied!</span>")
+		return FALSE
+	if(user)
+		if(!do_after(user, 10 SECONDS, target = user))
+			return FALSE
+		else
+			occupied = TRUE
+			set_chaingunner(user)
+
+/obj/machinery/ship_weapon/chaingun/attack_hand(mob/user)
+	if(!occupied)
+		return FALSE
+	if(gunner == user)
+		visible_message("<span class='notice'>The hatch of the [src] hisses open!</span>")
+		if(do_after(user, 5 SECONDS, target = src))
+			remove_chaingunner()
+
+/obj/machinery/ship_weapon/chaingun/proc/set_chaingunner(mob/user)
+	user.forceMove(src)
+	gunner = user
+	gunner.AddComponent(/datum/component/overmap_gunning, src)
+	gunner.add_verb(chaingun_verbs)
+	ui_interact(user)
+
+/obj/machinery/ship_weapon/chaingun/proc/remove_chaingunner()
+	if(gunner)
+		var/mob/user = gunner
+		var/obj/structure/overmap/OM = get_overmap()
+		OM?.stop_piloting(gunner)
+		user.forceMove(get_offset_target_turf(src, 1, 1))
+		user.remove_verb(chaingun_verbs)
+	gunner = null
+	occupied = FALSE
