@@ -98,7 +98,7 @@
 	to_chat(gunner, "<span class='notice'>You reach for [src]'s gun camera controls.</span>")
 
 /obj/machinery/chaingun_cycler
-	name = "\improper Mechanical Chaingun Cycler"
+	name = "Mechanical Chaingun Cycler"
 	icon = 'nsv13/icons/obj/chaingun_machines.dmi'
 	icon_state = "cycler"
 	desc = "Using a piezo quartz timer this machine ensures the Chaingun is firing at a steady pace." //placeholder?
@@ -106,7 +106,6 @@
 	density = TRUE
 	panel_open = TRUE
 	circuit = /obj/item/circuitboard/machine/chaingun_cycler
-	layer = 2.6 //Keeps the machine above the gun's massive sprite
 
 	var/repair_multiplier = 5
 	var/busy = FALSE
@@ -189,7 +188,7 @@
 
 
 /obj/machinery/chaingun_loading_hopper
-	name = "\improper Chaingun Loading Hopper" //tbd
+	name = "Chaingun Loading Hopper" //tbd
 	icon = 'nsv13/icons/obj/chaingun_machines.dmi'
 	icon_state = "loader"
 	desc = "The shape of the funnel on this thing apparently has an extremely tight machining tolerance." //placeholder
@@ -197,8 +196,10 @@
 	density = TRUE
 	panel_open = TRUE
 	circuit = /obj/item/circuitboard/machine/chaingun_loading_hopper
-	layer = 2.6 //Keeps the machine above the gun's massive sprite
 
+	var/soot = 0 //This seems familiar
+	var/max_soot = 100
+	var/min_soot = 0
 
 /obj/item/circuitboard/machine/chaingun_loading_hopper
 	name = "circuit board (chaingun loading hopper)"
@@ -238,8 +239,25 @@
 		to_chat(user, "<span class='notice'>You screw the [src]'s maintenance panel shut.</span>")
 		return TRUE
 
+/obj/machinery/chaingun_loading_hopper/attack_hand(mob/living/user) //Replace with swabber when broadside update gets full merged
+	. = ..()
+	if(soot == min_soot)
+		to_chat(user, "<span class='warning'>The [src] doesn't need a good swabbing yet!</span>")
+		return
+	if(panel_open && (soot > min_soot))
+		to_chat(user, "<span class='notice'>You swab the s machine with your bare hands...</span>")
+		while(soot > min_soot)
+			if(!do_after(user, 2 SECONDS, target = src))
+				to_chat(user, "<span class='warning'>You were interrupted!</span>")
+				return
+			soot -= rand(5,10)
+			if(soot <= min_soot)
+				soot = 0
+				to_chat(user, "<span class='notice'>You finish cleaning the [src] with your hands.</span>")
+				break
+
 /obj/machinery/chaingun_gyroscope
-	name = "\improper 'Always Upright' Kinetic Gyroscope" //tbd
+	name = "'Always Upright' Kinetic Gyroscope" //tbd
 	icon = 'nsv13/icons/obj/chaingun_machines.dmi'
 	icon_state = "gyro"
 	desc = "This delicate machination is what allows the gun and dome to rotate properly." //placeholder
@@ -247,7 +265,9 @@
 	density = TRUE
 	panel_open = TRUE
 	circuit = /obj/item/circuitboard/machine/chaingun_gyroscope
-	layer = 2.6 //Keeps the machine above the gun's massive sprite
+
+	var/alignment = 100
+	var/max_alignment = 100
 
 /obj/item/circuitboard/machine/chaingun_gyroscope
 	name = "circuit board (chaingun gyroscope)"
@@ -287,6 +307,23 @@
 		(panel_open = FALSE)
 		to_chat(user, "<span class='notice'>You screw the [src]'s maintenance panel shut.</span>")
 		return TRUE
+
+/obj/machinery/chaingun_gyroscope/attack_hand(mob/living/user) //add alignment sound?
+	. = ..()
+	if(alignment == max_alignment)
+		to_chat(user, "<span class='warning'>The [src] doesn't need your grubby hands in it yet!</span>")
+		return
+	if(panel_open && (alignment < max_alignment))
+		to_chat(user, "<span class='notice'>You begin to align the [src] by hand...</span>")
+		while(alignment < max_alignment)
+			if(!do_after(user, 5, target = src))
+				to_chat(user, "<span class='warning'>You were interrupted!</span>")
+				return
+			alignment += rand(1,2)
+			if(alignment >= 100)
+				alignment = 100
+				to_chat(user, "<span class='notice'>You finish aligning the [src].</span>")
+				break
 
 /datum/ship_weapon/chaingun
 	name = "Chaingun"
