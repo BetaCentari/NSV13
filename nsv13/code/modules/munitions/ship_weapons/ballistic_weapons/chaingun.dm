@@ -32,6 +32,7 @@
 
 	var/mob/gunner = null
 	var/occupied = FALSE
+	var/climbing_in = FALSE
 
 	var/list/chaingun_verbs = list(.verb/show_computer, .verb/show_view)
 
@@ -44,6 +45,7 @@
 	desc = "Cut them down! Cut them all down!"
 	req_components = list(
 		/obj/item/stack/sheet/mineral/titanium = 5,
+		/obj/item/stack/sheet/glass = 50,
 		/obj/item/stack/sheet/iron = 20,
 		/obj/item/stock_parts/manipulator = 4,
 		/obj/item/stock_parts/capacitor = 1,
@@ -52,6 +54,14 @@
 	)
 	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | UNACIDABLE | ACID_PROOF | FREEZE_PROOF
 	build_path = /obj/machinery/ship_weapon/chaingun
+
+/obj/structure/frame/machine/attackby(obj/item/P, mob/user, params) //Move this to Job_changes.dm for the new ship, we don't want players to build chainguns on anything except the bottom deck
+	if(istype(P, /obj/item/circuitboard/machine/chaingun))
+		var/turf/z_level = get_turf(src)
+		if(z_level.z != 2)
+			to_chat(user, "<span class='warning'>The [src] can only be built on the bottom deck!</span>")
+			return FALSE
+	. = ..()
 
 /obj/item/circuitboard/machine/chaingun/Initialize(mapload)
 	. = ..()
@@ -96,6 +106,14 @@
 	density = TRUE
 	panel_open = TRUE
 	circuit = /obj/item/circuitboard/machine/chaingun_cycler
+	layer = 2.6 //Keeps the machine above the gun's massive sprite
+
+	var/repair_multiplier = 5
+	var/busy = FALSE
+	var/jammed = FALSE //When durability reaches 0, cycler becomes jammed
+	var/durability = 100 //Lowers when firing, replenished with oil
+	var/max_durability = 100
+
 
 /obj/item/circuitboard/machine/chaingun_cycler
 	name = "circuit board (chaingun cycler)"
@@ -135,6 +153,41 @@
 		to_chat(user, "<span class='notice'>You screw the [src]'s maintenance panel shut.</span>")
 		return TRUE
 
+/obj/machinery/chaingun_cycler/attackby(obj/item/R, mob/living/user, params) //Taken from ammo_rack.dm from the ammo rack itself
+	. = ..()
+	if(istype(R, /obj/item/reagent_containers) && panel_open)
+		if(jammed)
+			to_chat(user, "<span class='warning'>You can't lubricate a jammed machine!</span>")
+			return TRUE
+		if(durability == 100)
+			to_chat(user, "<span class='warning'>[src] doesn't need any oil right now!</span>")
+			return TRUE
+		if(!R.reagents.has_reagent(/datum/reagent/oil))
+			to_chat(user, "<span class='warning'>You need oil to lubricate this!</span>")
+			return TRUE
+		// get how much oil we have
+		var/oil_amount = min(R.reagents.get_reagent_amount(/datum/reagent/oil), max_durability/repair_multiplier)
+		var/oil_needed = CLAMP(ROUND_UP((max_durability-durability)/repair_multiplier), 1, oil_amount)
+		oil_amount = min(oil_amount, oil_needed)
+		user.visible_message("<span class='notice'>[user] begins lubricating [src]...</span>", \
+					"<span class='notice'>You start lubricating the inner workings of [src]...</span>")
+		busy = TRUE
+		if(!do_after(user, 5 SECONDS, target=src))
+			busy = FALSE
+			to_chat(user, "<span class='warning'>You were interrupted!</span>")
+			return TRUE
+		if(!R.reagents.has_reagent(/datum/reagent/oil, oil_amount)) //things can change, check again.
+			to_chat(user, "<span class='warning'>You don't have enough oil left to lubricate [src]!</span>")
+			busy = FALSE
+			return TRUE
+		user.visible_message("<span class='notice'>[user] lubricates [src].</span>", \
+					"<span class='notice'>You lubricate the inner workings of [src].</span>")
+		durability = min(durability + (oil_amount * repair_multiplier), max_durability)
+		R.reagents.remove_reagent(/datum/reagent/oil, oil_amount)
+		busy = FALSE
+		return TRUE
+
+
 /obj/machinery/chaingun_loading_hopper
 	name = "\improper Chaingun Loading Hopper" //tbd
 	icon = 'nsv13/icons/obj/chaingun_machines.dmi'
@@ -144,6 +197,8 @@
 	density = TRUE
 	panel_open = TRUE
 	circuit = /obj/item/circuitboard/machine/chaingun_loading_hopper
+	layer = 2.6 //Keeps the machine above the gun's massive sprite
+
 
 /obj/item/circuitboard/machine/chaingun_loading_hopper
 	name = "circuit board (chaingun loading hopper)"
@@ -192,6 +247,7 @@
 	density = TRUE
 	panel_open = TRUE
 	circuit = /obj/item/circuitboard/machine/chaingun_gyroscope
+	layer = 2.6 //Keeps the machine above the gun's massive sprite
 
 /obj/item/circuitboard/machine/chaingun_gyroscope
 	name = "circuit board (chaingun gyroscope)"
@@ -269,12 +325,18 @@
 	if(occupied)
 		to_chat(user, "<span class='warning'>The [src] is already occupied!</span>")
 		return FALSE
+	if(climbing_in)
+		to_chat(user, "<span class='warning'>Someone is already climbing into the [src]</span>")
+		return FALSE
 	if(user)
+		climbing_in = TRUE
 		if(!do_after(user, 10 SECONDS, target = user))
+			climbing_in = FALSE
 			return FALSE
 		else
 			occupied = TRUE
 			set_chaingunner(user)
+			climbing_in = FALSE
 
 /obj/machinery/ship_weapon/chaingun/attack_hand(mob/user)
 	if(!occupied)
