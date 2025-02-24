@@ -9,6 +9,9 @@
 	panel_open = TRUE
 	circuit = /obj/item/circuitboard/machine/chaingun_cycler
 
+	var/obj/machinery/ship_weapon/chaingun/chaingun
+
+
 	var/repair_multiplier = 5
 	var/busy = FALSE
 	var/jammed = FALSE //When durability reaches 0, cycler becomes jammed
@@ -97,17 +100,17 @@
 			to_chat(user, "<span class='warning'>You can't lubricate a jammed machine!</span>")
 			return TRUE
 		if(durability == 100)
-			to_chat(user, "<span class='warning'>[src] doesn't need any oil right now!</span>")
+			to_chat(user, "<span class='warning'>[src] doesn't need any IPC blood right now!</span>")
 			return TRUE
 		if(A.blood_volume == 0)
-			to_chat(user, "<span class='warning'>You need oil to lubricate this!</span>")
+			to_chat(user, "<span class='warning'>[A] doesn't have enough blood!</span>")
 			return TRUE
 		// get how much oil we have
 		var/oil_amount = min(A.blood_volume, max_durability/repair_multiplier)
 		var/oil_needed = CLAMP(ROUND_UP((max_durability-durability)/repair_multiplier), 1, oil_amount)
 		oil_amount = min(oil_amount, oil_needed)
 		user.visible_message("<span class='notice'>[user] begins lubricating [src] with [A]'s blood...</span>", \
-				"<span class='notice'>You start lubricating the inner workings of [src]...</span>",)
+				"<span class='notice'>You start lubricating the inner workings of [src] with [A]'s blood...</span>",)
 		to_chat(A, "<span class='userdanger'>[user] rips an oil hose out of you and connects it to the [src]!")
 		busy = TRUE
 		if(!do_after(user, 5 SECONDS, target=src))
@@ -115,7 +118,7 @@
 			to_chat(user, "<span class='warning'>You were interrupted!</span>")
 			return TRUE
 		if(A.blood_volume < oil_amount) //things can change, check again.
-			to_chat(user, "<span class='warning'>You don't have enough oil left to lubricate [src]!</span>")
+			to_chat(user, "<span class='warning'>There's not enough blood left to lubricate [src]!</span>")
 			busy = FALSE
 			return TRUE
 		user.visible_message("<span class='notice'>[user] lubricates [src] with [A]'s blood!</span>", \
@@ -134,6 +137,11 @@
 	density = TRUE
 	panel_open = TRUE
 	circuit = /obj/item/circuitboard/machine/chaingun_loading_hopper
+
+	var/obj/machinery/ship_weapon/chaingun/chaingun
+
+	var/shells = 0
+	var/max_shells = 100
 
 	var/soot = 0 //This seems familiar
 	var/max_soot = 100
@@ -203,6 +211,8 @@
 	density = TRUE
 	panel_open = TRUE
 	circuit = /obj/item/circuitboard/machine/chaingun_gyroscope
+
+	var/obj/machinery/ship_weapon/chaingun/chaingun
 
 	var/alignment = 100
 	var/max_alignment = 100

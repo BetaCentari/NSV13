@@ -3986,6 +3986,7 @@
 #include "nsv13\code\modules\munitions\ship_weapons\ballistic_weapons\broadsides.dm"
 #include "nsv13\code\modules\munitions\ship_weapons\ballistic_weapons\cargo_launcher.dm"
 #include "nsv13\code\modules\munitions\ship_weapons\ballistic_weapons\chaingun.dm"
+#include "nsv13\code\modules\munitions\ship_weapons\ballistic_weapons\chaingun_ammunition.dm"
 #include "nsv13\code\modules\munitions\ship_weapons\ballistic_weapons\chaingun_machinery.dm"
 #include "nsv13\code\modules\munitions\ship_weapons\ballistic_weapons\deck_guns.dm"
 #include "nsv13\code\modules\munitions\ship_weapons\ballistic_weapons\deck_guns_construction.dm"

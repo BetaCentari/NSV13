@@ -1,5 +1,5 @@
 /obj/machinery/ship_weapon/chaingun
-	name = "\improper ASW 'Guillotine' Chainfed Machinegun"
+	name = "\improper ASW 'Guillotine' Chainfed AutoGun"
 	icon = 'nsv13/icons/obj/chaingun.dmi'
 	icon_state = "chaingun"
 	desc = "Dakka dakka doesn't do it justice." //placeholder
@@ -36,9 +36,9 @@
 
 	var/list/chaingun_verbs = list(.verb/show_computer, .verb/show_view)
 
-	var/obj/machinery/chaingun_cycler
-	var/obj/machinery/chaingun_loading_hopper
-	var/obj/machinery/chaingun_gyroscope
+	var/obj/machinery/chaingun_cycler/cycler
+	var/obj/machinery/chaingun_loading_hopper/hopper
+	var/obj/machinery/chaingun_gyroscope/gyro
 
 /obj/item/circuitboard/machine/chaingun
 	name = "circuit board (chaingun platform)"
