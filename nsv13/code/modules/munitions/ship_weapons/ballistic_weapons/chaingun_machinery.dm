@@ -25,8 +25,8 @@
 	req_components = list(
 		/obj/item/stack/sheet/iron = 30,
 		/obj/item/stack/cable_coil = 5,
-		/obj/item/stock_parts/manipulator = 10,
-		/obj/item/stock_parts/matter_bin = 2,
+		/obj/item/stock_parts/manipulator = 2,
+		/obj/item/stock_parts/matter_bin = 1,
 	)
 	build_path = /obj/machinery/chaingun_cycler
 
@@ -140,8 +140,8 @@
 
 	var/obj/machinery/ship_weapon/chaingun/chaingun
 
-	var/shells = 0
-	var/max_shells = 100
+	var/belts = 0
+	var/belts_capacity = 5
 
 	var/soot = 0 //This seems familiar
 	var/max_soot = 100
@@ -153,10 +153,13 @@
 	req_components = list(
 		/obj/item/stack/sheet/iron = 20,
 		/obj/item/stack/cable_coil = 5,
-		/obj/item/stock_parts/manipulator = 4,
-		/obj/item/stock_parts/matter_bin = 10,
+		/obj/item/stock_parts/matter_bin = 2,
 	)
 	build_path = /obj/machinery/chaingun_cycler
+
+/obj/machinery/chaingun_loading_hopper/RefreshParts()
+	for(var/obj/item/stock_parts/matter_bin/MB in component_parts)
+		belts_capacity = (5 * MB.rating)
 
 /obj/machinery/chaingun_loading_hopper/wrench_act(mob/user, obj/item/tool)
 	tool.play_tool_sound(src, 50)
@@ -202,6 +205,14 @@
 				to_chat(user, "<span class='notice'>You finish cleaning the [src] with your hands.</span>")
 				break
 
+/obj/machinery/ship_weapon/broadside/examine()
+	. = ..()
+	if(panel_open)
+		. += "The maintenance panel is <b>unscrewed</b> and the machinery could be <i>pried out</i>."
+	else
+		. += "The maintenance panel is <b>closed</b> and could be <i>screwed open</i>."
+	. += "<span class ='notice'>It has [belts]/[belts_capacity] ammunition belts seated inside.</span>"
+
 /obj/machinery/chaingun_gyroscope
 	name = "'Always Upright' Kinetic Gyroscope" //tbd
 	icon = 'nsv13/icons/obj/chaingun_machines.dmi'
@@ -223,8 +234,8 @@
 	req_components = list(
 		/obj/item/stack/sheet/iron = 50,
 		/obj/item/stack/cable_coil = 5,
-		/obj/item/stock_parts/manipulator = 10,
-		/obj/item/stock_parts/scanning_module = 5,
+		/obj/item/stock_parts/manipulator = 2,
+		/obj/item/stock_parts/scanning_module = 1,
 		/obj/item/stock_parts/micro_laser = 1,
 	)
 	build_path = /obj/machinery/chaingun_gyroscope
