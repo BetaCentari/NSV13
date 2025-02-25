@@ -10,14 +10,14 @@
 
 	bound_width = 96
 	bound_height = 96
-	ammo_type = /obj/item/ship_weapon/ammunition/chaingun_belt
+	magazine_type = /obj/item/ammo_box/magazine/chaingun_belt
 	circuit = /obj/item/circuitboard/machine/chaingun
 
 //	fire_mode = FIRE_MODE_GAUSS
 
 	semi_auto = TRUE
 	maintainable = FALSE
-	max_ammo = 100
+	max_ammo = 5
 //	feeding_sound = have to make one
 	fed_sound = null
 	chamber_sound = null
@@ -182,3 +182,11 @@
 		user.remove_verb(chaingun_verbs)
 	gunner = null
 	occupied = FALSE
+
+/obj/machinery/ship_weapon/chaingun/local_fire()
+	. = ..()
+	if(!hopper)
+		new /obj/effect/particle_effect/smoke(hopper_turf)
+	else
+		if(prob(hopper.soot / 10))
+			new /obj/effect/particle_effect/smoke(hopper_turf)

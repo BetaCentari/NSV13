@@ -638,7 +638,7 @@ Misc projectile types, effects, think of this as the special FX file.
 	name = "chaingun bullet"
 	icon = 'nsv13/icons/obj/projectiles_nsv.dmi'
 	icon_state = "chaingun"
-	damage = 0.1
+	damage = 100
 	flag = "overmap_light"
 	spread = 0
 	speed = 5

@@ -31,6 +31,10 @@
 	)
 	build_path = /obj/machinery/chaingun_cycler
 
+/obj/machinery/chaingun_cycler/Destroy()
+	chaingun?.cycler = null
+	. = ..()
+
 /obj/machinery/chaingun_cycler/wrench_act(mob/user, obj/item/tool)
 	if(!panel_open)
 		to_chat(user, "<span class='warning'>You can't reach the bolts, you have to <i>unscrew</i> the panel open first!</span>")
@@ -40,9 +44,11 @@
 		chaingun = (locate(/obj/machinery/ship_weapon/chaingun) in T)
 		var/turf/CT = chaingun?.cycler_turf
 		if(!chaingun || T != CT)
+			chaingun = null
 			to_chat(user, "<span class='warning'>You can't connect the [src] here!</span>")
 			return FALSE
 		tool.play_tool_sound(src, 50)
+		chaingun.cycler = src
 		if(do_after(user, 5 SECONDS, target = src))
 			(anchored = TRUE)
 			to_chat(user, "<span class='notice'>You wrench down the bolts, anchoring the [src] to the floor.</span>")
@@ -157,6 +163,10 @@
 	var/max_soot = 100
 	var/min_soot = 0
 
+/obj/machinery/chaingun_cycler/Destroy()
+	chaingun?.hopper = null
+	. = ..()
+
 /obj/item/circuitboard/machine/chaingun_loading_hopper
 	name = "circuit board (chaingun loading hopper)"
 	desc = "chain holding lookin' mf" //placeholder
@@ -180,9 +190,11 @@
 		chaingun = (locate(/obj/machinery/ship_weapon/chaingun) in T)
 		var/turf/HT = chaingun?.hopper_turf
 		if(!chaingun || T != HT)
+			chaingun = null
 			to_chat(user, "<span class='warning'>You can't connect the [src] here!</span>")
 			return FALSE
 		tool.play_tool_sound(src, 50)
+		chaingun.hopper = src
 		if(do_after(user, 5 SECONDS, target = src))
 			(anchored = TRUE)
 			to_chat(user, "<span class='notice'>You wrench down the bolts, anchoring the [src] to the floor.</span>")
@@ -246,6 +258,10 @@
 	var/alignment = 100
 	var/max_alignment = 100
 
+/obj/machinery/chaingun_gyroscope/Destroy()
+	chaingun?.gyro = null
+	. = ..()
+
 /obj/item/circuitboard/machine/chaingun_gyroscope
 	name = "circuit board (chaingun gyroscope)"
 	desc = "spinny winny lookin' mf" //placeholder
@@ -267,8 +283,10 @@
 		chaingun = (locate(/obj/machinery/ship_weapon/chaingun) in T)
 		var/turf/GT = chaingun?.gyro_turf
 		if(!chaingun || T != GT)
+			chaingun = null
 			to_chat(user, "<span class='warning'>You can't connect the [src] here!</span>")
 			return FALSE
+		chaingun.gyro = src
 		tool.play_tool_sound(src, 50)
 		if(do_after(user, 5 SECONDS, target = src))
 			(anchored = TRUE)

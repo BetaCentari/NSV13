@@ -1,16 +1,28 @@
-/obj/item/ship_weapon/ammunition/chaingun_belt
-	name = "\improper ASA 'Severance' Ammunition Belt"
-	desc = "A belt of 5 'Severance' 42mm cartridges meant to feed into a chaingun's ammo hopper." //42mm because it's the answer to life
+/obj/item/ammo_box/magazine/chaingun_belt
+	name = "ASA 'Severance' Ammunition Belt"
+	desc = "A belt of 5 'Severance' 42mm cartridges meant to feed into a chaingun's ammo hopper."
+	icon = 'nsv13/icons/obj/ammo.dmi'
 	icon_state = "chaingun_belt"
+	ammo_type = /obj/item/ammo_casing/chaingun
+	caliber = "42mm"
+	max_ammo = 5
+	w_class = WEIGHT_CLASS_NORMAL
+	multiple_sprites = 1
+
+/obj/item/ammo_casing/chaingun
+	name = "42mm 'Severance' cartridge"
+	desc = "When asked why the chaingun's ammunition was such a particular measurement, the manufacturers responded saying it was 'The answer to life'."
+	icon_state = "chaingun_cartridge"
 	lefthand_file = 'nsv13/icons/mob/inhands/weapons/bombs_lefthand.dmi'
 	righthand_file = 'nsv13/icons/mob/inhands/weapons/bombs_righthand.dmi'
-	icon = 'nsv13/icons/obj/munitions.dmi'
-	w_class = WEIGHT_CLASS_NORMAL
+	icon = 'nsv13/icons/obj/ammo.dmi'
+	w_class = WEIGHT_CLASS_SMALL
 	projectile_type = /obj/item/projectile/bullet/chaingun
+	caliber = "42mm"
 
 /obj/machinery/chaingun_loading_hopper/attackby(obj/item/I, mob/living/user, params) //Add/make sounds
 	. = ..()
-	if(istype(I, /obj/item/ship_weapon/ammunition/chaingun_belt))
+	if(istype(I, /obj/item/ammo_box/magazine/chaingun_belt))
 		if(belts == 0)
 			to_chat(user, "<span class='notice'>You <i>very</i> carefully feed the belt into the mechanism...</span>")
 			if(!do_after(user, 15 SECONDS, target = src))
