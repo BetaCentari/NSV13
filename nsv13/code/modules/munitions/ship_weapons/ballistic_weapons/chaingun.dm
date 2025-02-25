@@ -10,7 +10,7 @@
 
 	bound_width = 96
 	bound_height = 96
-	ammo_type = /obj/item/ship_weapon/ammunition/
+	ammo_type = /obj/item/ship_weapon/ammunition/chaingun_belt
 	circuit = /obj/item/circuitboard/machine/chaingun
 
 //	fire_mode = FIRE_MODE_GAUSS
@@ -37,8 +37,13 @@
 	var/list/chaingun_verbs = list(.verb/show_computer, .verb/show_view)
 
 	var/obj/machinery/chaingun_cycler/cycler
+	var/turf/cycler_turf = null
+
 	var/obj/machinery/chaingun_loading_hopper/hopper
+	var/turf/hopper_turf = null
+
 	var/obj/machinery/chaingun_gyroscope/gyro
+	var/turf/gyro_turf = null
 
 /obj/item/circuitboard/machine/chaingun
 	name = "circuit board (chaingun platform)"
@@ -54,6 +59,12 @@
 	)
 	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | UNACIDABLE | ACID_PROOF | FREEZE_PROOF
 	build_path = /obj/machinery/ship_weapon/chaingun
+
+/obj/machinery/ship_weapon/chaingun/Initialize(mapload)
+	. = ..()
+	cycler_turf = get_offset_target_turf(src, 2, 2)
+	hopper_turf = get_offset_target_turf(src, 2, 1)
+	gyro_turf = get_offset_target_turf(src, 1 , 2)
 
 /obj/structure/frame/machine/attackby(obj/item/P, mob/user, params) //Move this to Job_changes.dm for the new ship, we don't want players to build chainguns on anything except the bottom deck
 	if(istype(P, /obj/item/circuitboard/machine/chaingun))
@@ -96,7 +107,6 @@
 		return
 	set_chaingunner(usr)
 	to_chat(gunner, "<span class='notice'>You reach for [src]'s gun camera controls.</span>")
-
 
 /datum/ship_weapon/chaingun
 	name = "Chaingun"

@@ -8,6 +8,7 @@
 	density = TRUE
 	panel_open = TRUE
 	circuit = /obj/item/circuitboard/machine/chaingun_cycler
+	layer = 3 //Want this to appear above the chaingun sprite
 
 	var/obj/machinery/ship_weapon/chaingun/chaingun
 
@@ -31,16 +32,23 @@
 	build_path = /obj/machinery/chaingun_cycler
 
 /obj/machinery/chaingun_cycler/wrench_act(mob/user, obj/item/tool)
-	tool.play_tool_sound(src, 50)
 	if(!panel_open)
 		to_chat(user, "<span class='warning'>You can't reach the bolts, you have to <i>unscrew</i> the panel open first!</span>")
 		return FALSE
 	if(!anchored)
+		var/turf/T = get_turf(src)
+		chaingun = (locate(/obj/machinery/ship_weapon/chaingun) in T)
+		var/turf/CT = chaingun?.cycler_turf
+		if(!chaingun || T != CT)
+			to_chat(user, "<span class='warning'>You can't connect the [src] here!</span>")
+			return FALSE
+		tool.play_tool_sound(src, 50)
 		if(do_after(user, 5 SECONDS, target = src))
 			(anchored = TRUE)
 			to_chat(user, "<span class='notice'>You wrench down the bolts, anchoring the [src] to the floor.</span>")
 			return TRUE
 	else
+		tool.play_tool_sound(src, 50)
 		if(do_after(user, 5 SECONDS, target = src))
 			(anchored = FALSE)
 			to_chat(user, "<span class='notice'>You loosen the bolts, freeing the [src] from the floor.</span>")
@@ -125,6 +133,7 @@
 					"<span class='notice'>You lubricate the inner workings of [src] with [A]'s blood!</span>")
 		durability = min(durability + (oil_amount * repair_multiplier), max_durability)
 		A.blood_volume = (A.blood_volume -= (oil_amount * 3))
+		A.apply_damage(5, BRUTE, pick(BODY_ZONE_R_ARM, BODY_ZONE_L_ARM))
 		busy = FALSE
 		return TRUE
 
@@ -137,6 +146,7 @@
 	density = TRUE
 	panel_open = TRUE
 	circuit = /obj/item/circuitboard/machine/chaingun_loading_hopper
+	layer = 3 //Want this to appear above the chaingun sprite
 
 	var/obj/machinery/ship_weapon/chaingun/chaingun
 
@@ -162,16 +172,23 @@
 		belts_capacity = (5 * MB.rating)
 
 /obj/machinery/chaingun_loading_hopper/wrench_act(mob/user, obj/item/tool)
-	tool.play_tool_sound(src, 50)
 	if(!panel_open)
 		to_chat(user, "<span class='warning'>You can't reach the bolts, you have to <i>unscrew</i> the panel open first!</span>")
 		return FALSE
 	if(!anchored)
+		var/turf/T = get_turf(src)
+		chaingun = (locate(/obj/machinery/ship_weapon/chaingun) in T)
+		var/turf/HT = chaingun?.hopper_turf
+		if(!chaingun || T != HT)
+			to_chat(user, "<span class='warning'>You can't connect the [src] here!</span>")
+			return FALSE
+		tool.play_tool_sound(src, 50)
 		if(do_after(user, 5 SECONDS, target = src))
 			(anchored = TRUE)
 			to_chat(user, "<span class='notice'>You wrench down the bolts, anchoring the [src] to the floor.</span>")
 			return TRUE
 	else
+		tool.play_tool_sound(src, 50)
 		if(do_after(user, 5 SECONDS, target = src))
 			(anchored = FALSE)
 			to_chat(user, "<span class='notice'>You loosen the bolts, freeing the [src] from the floor.</span>")
@@ -205,7 +222,7 @@
 				to_chat(user, "<span class='notice'>You finish cleaning the [src] with your hands.</span>")
 				break
 
-/obj/machinery/ship_weapon/broadside/examine()
+/obj/machinery/chaingun_loading_hopper/examine()
 	. = ..()
 	if(panel_open)
 		. += "The maintenance panel is <b>unscrewed</b> and the machinery could be <i>pried out</i>."
@@ -222,6 +239,7 @@
 	density = TRUE
 	panel_open = TRUE
 	circuit = /obj/item/circuitboard/machine/chaingun_gyroscope
+	layer = 3 //Want this to appear above the chaingun sprite
 
 	var/obj/machinery/ship_weapon/chaingun/chaingun
 
@@ -241,16 +259,23 @@
 	build_path = /obj/machinery/chaingun_gyroscope
 
 /obj/machinery/chaingun_gyroscope/wrench_act(mob/user, obj/item/tool)
-	tool.play_tool_sound(src, 50)
 	if(!panel_open)
 		to_chat(user, "<span class='warning'>You can't reach the bolts, you have to <i>unscrew</i> the panel open first!</span>")
 		return FALSE
 	if(!anchored)
+		var/turf/T = get_turf(src)
+		chaingun = (locate(/obj/machinery/ship_weapon/chaingun) in T)
+		var/turf/GT = chaingun?.gyro_turf
+		if(!chaingun || T != GT)
+			to_chat(user, "<span class='warning'>You can't connect the [src] here!</span>")
+			return FALSE
+		tool.play_tool_sound(src, 50)
 		if(do_after(user, 5 SECONDS, target = src))
 			(anchored = TRUE)
 			to_chat(user, "<span class='notice'>You wrench down the bolts, anchoring the [src] to the floor.</span>")
 			return TRUE
 	else
+		tool.play_tool_sound(src, 50)
 		if(do_after(user, 5 SECONDS, target = src))
 			(anchored = FALSE)
 			to_chat(user, "<span class='notice'>You loosen the bolts, freeing the [src] from the floor.</span>")

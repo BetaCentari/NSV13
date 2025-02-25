@@ -18,7 +18,6 @@
 				to_chat(user, "<span class='userdanger'>Something chews up your arm!</span>")
 				return FALSE
 			else
-				to_chat(user, "<span class='notice'>You <i>very</i> carefully feed the belt into the mechanism...</span>")
 				belts = (belts += 1)
 				I.forceMove(src)
 				return TRUE
