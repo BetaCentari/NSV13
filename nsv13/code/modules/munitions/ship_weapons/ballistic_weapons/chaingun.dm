@@ -13,7 +13,7 @@
 	magazine_type = /obj/item/ammo_box/magazine/chaingun_belt
 	circuit = /obj/item/circuitboard/machine/chaingun
 
-//	fire_mode = FIRE_MODE_GAUSS
+	fire_mode = FIRE_MODE_PDC //Make sure this works, hold down on firing to continuous fire
 
 	semi_auto = TRUE
 	maintainable = FALSE
@@ -37,6 +37,7 @@
 	var/list/chaingun_verbs = list(.verb/show_computer, .verb/show_view)
 
 	var/obj/machinery/chaingun_cycler/cycler
+	var/cycler_firerate = 1
 	var/turf/cycler_turf = null
 
 	var/obj/machinery/chaingun_loading_hopper/hopper
@@ -110,8 +111,8 @@
 
 /datum/ship_weapon/chaingun
 	name = "Chaingun"
-	burst_size = 10 //Try to find a way to get continuous fire
-	fire_delay = 0 SECONDS
+	burst_size = 1
+	fire_delay = 1 SECONDS
 	range_modifier = 20
 	default_projectile_type = /obj/item/projectile/bullet/chaingun
 	select_alert = "<span class='notice'>Spinning up chainguns...</span>"

@@ -19,6 +19,7 @@
 	var/durability = 100 //Lowers when firing, replenished with oil
 	var/max_durability = 100
 
+	var/cycle_speed = 1 //The higher this variable is, the faster the gun fires
 
 /obj/item/circuitboard/machine/chaingun_cycler
 	name = "circuit board (chaingun cycler)"
@@ -35,6 +36,10 @@
 	chaingun?.cycler = null
 	. = ..()
 
+/obj/machinery/chaingun_cycler/RefreshParts()
+	for(var/obj/item/stock_parts/manipulator/M in component_parts)
+		cycle_speed = (M.rating)
+
 /obj/machinery/chaingun_cycler/wrench_act(mob/user, obj/item/tool)
 	if(!panel_open)
 		to_chat(user, "<span class='warning'>You can't reach the bolts, you have to <i>unscrew</i> the panel open first!</span>")
@@ -49,6 +54,7 @@
 			return FALSE
 		tool.play_tool_sound(src, 50)
 		chaingun.cycler = src
+		chaingun.cycler_firerate = cycle_speed
 		if(do_after(user, 5 SECONDS, target = src))
 			(anchored = TRUE)
 			to_chat(user, "<span class='notice'>You wrench down the bolts, anchoring the [src] to the floor.</span>")
