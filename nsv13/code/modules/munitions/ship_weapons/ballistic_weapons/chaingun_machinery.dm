@@ -39,6 +39,8 @@
 /obj/machinery/chaingun_cycler/RefreshParts()
 	for(var/obj/item/stock_parts/manipulator/M in component_parts)
 		cycle_speed = (M.rating)
+		if(chaingun)
+			chaingun.cycler_firerate = cycle_speed
 
 /obj/machinery/chaingun_cycler/wrench_act(mob/user, obj/item/tool)
 	if(!panel_open)
