@@ -13,7 +13,7 @@
 	magazine_type = /obj/item/ammo_box/magazine/chaingun_belt
 	circuit = /obj/item/circuitboard/machine/chaingun
 
-	fire_mode = FIRE_MODE_PDC //Make sure this works, hold down on firing to continuous fire
+	fire_mode = FIRE_MODE_CHAINGUN
 
 	semi_auto = TRUE
 	maintainable = FALSE
@@ -36,14 +36,14 @@
 
 	var/list/chaingun_verbs = list(.verb/show_computer, .verb/show_view)
 
-	var/obj/machinery/chaingun_cycler/cycler
+	var/obj/machinery/chaingun_cycler/cycler = null
 	var/cycler_firerate = 1
 	var/turf/cycler_turf = null
 
-	var/obj/machinery/chaingun_loading_hopper/hopper
+	var/obj/machinery/chaingun_loading_hopper/hopper = null
 	var/turf/hopper_turf = null
 
-	var/obj/machinery/chaingun_gyroscope/gyro
+	var/obj/machinery/chaingun_gyroscope/gyro = null
 	var/turf/gyro_turf = null
 
 /obj/item/circuitboard/machine/chaingun
@@ -170,19 +170,31 @@
 /obj/machinery/ship_weapon/chaingun/proc/set_chaingunner(mob/user)
 	user.forceMove(src)
 	gunner = user
-	gunner.AddComponent(/datum/component/overmap_gunning, src)
+	gunner.AddComponent(/datum/component/overmap_gunning/chaingun, src)
+	update_cycler()
 	gunner.add_verb(chaingun_verbs)
 	ui_interact(user)
 
 /obj/machinery/ship_weapon/chaingun/proc/remove_chaingunner()
 	if(gunner)
-		var/mob/user = gunner
 		var/obj/structure/overmap/OM = get_overmap()
 		OM?.stop_piloting(gunner)
-		user.forceMove(get_offset_target_turf(src, 1, 1))
-		user.remove_verb(chaingun_verbs)
+		gunner.forceMove(get_offset_target_turf(src, 1, 1))
+		gunner.remove_verb(chaingun_verbs)
 	gunner = null
 	occupied = FALSE
+
+/datum/component/overmap_gunning/chaingun //move this later
+	fire_mode = FIRE_MODE_CHAINGUN
+	automatic = TRUE
+	fire_delay = 1 SECONDS
+
+/obj/machinery/ship_weapon/chaingun/proc/update_cycler()
+	var/datum/component/overmap_gunning/OG = gunner?.GetComponent(/datum/component/overmap_gunning/chaingun)
+	if(!cycler)
+		OG?.fire_delay = 1 SECONDS
+	else
+		OG?.fire_delay = (1 SECONDS / cycler_firerate)
 
 /obj/machinery/ship_weapon/chaingun/local_fire()
 	. = ..()
@@ -191,3 +203,44 @@
 	else
 		if(prob(hopper.soot / 10))
 			new /obj/effect/particle_effect/smoke(hopper_turf)
+
+/obj/machinery/ship_weapon/chaingun/ui_interact(mob/user, datum/tgui/ui)
+	ui = SStgui.try_update_ui(user, src, ui)
+	if(!ui)
+		ui = new(user, src, "MunitionsComputer") //Probs need to replace this
+		ui.open()
+		ui.set_autoupdate(TRUE)
+
+/obj/machinery/ship_weapon/chaingun/ui_state(mob/user)
+	return GLOB.contained_state
+
+/obj/machinery/ship_weapon/chaingun/ui_act(action, params, datum/tgui/ui)
+	if(..())
+		return
+	playsound(src.loc,'nsv13/sound/effects/fighters/switch.ogg', 50, FALSE) //Switch this up to some clunky gun sounds
+	switch(action)
+		if("toggle_load")
+			if(state == STATE_LOADED)
+				feed()
+			else
+				unload()
+		if("chamber")
+			chamber()
+		if("toggle_safety")
+			safety = !safety
+		if("load")
+			load()
+
+/obj/machinery/ship_weapon/chaingun/ui_data(mob/user)
+	var/list/data = list()
+	data["loaded"] = state > STATE_LOADED
+	data["chambered"] = state == STATE_CHAMBERED
+	data["safety"] = safety
+	data["ammo"] = ammo.len
+	data["max_ammo"] = max_ammo
+	data["cycler_firerate"] = cycler?.cycle_speed
+	data["gyroscope_alignment"] = gyro?.alignment
+	data["max_gyroscope_alignment"] = gyro?.max_alignment
+	data["hopper_belts"] = hopper?.belts
+	data["max_hopper_belts"] = hopper?.belts_capacity
+	return data

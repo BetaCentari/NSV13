@@ -12,6 +12,7 @@
 #define FIRE_MODE_PDC 8
 #define FIRE_MODE_BROADSIDE 9
 #define FIRE_MODE_PHORON 10
+#define FIRE_MODE_CHAINGUN 11
 
 //Base Armor Values
 

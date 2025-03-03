@@ -41,6 +41,7 @@
 		cycle_speed = (M.rating)
 		if(chaingun)
 			chaingun.cycler_firerate = cycle_speed
+			chaingun.update_cycler()
 
 /obj/machinery/chaingun_cycler/wrench_act(mob/user, obj/item/tool)
 	if(!panel_open)
@@ -57,6 +58,7 @@
 		tool.play_tool_sound(src, 50)
 		chaingun.cycler = src
 		chaingun.cycler_firerate = cycle_speed
+		chaingun.update_cycler()
 		if(do_after(user, 5 SECONDS, target = src))
 			(anchored = TRUE)
 			to_chat(user, "<span class='notice'>You wrench down the bolts, anchoring the [src] to the floor.</span>")
