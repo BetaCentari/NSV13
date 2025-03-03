@@ -39,6 +39,7 @@
 	var/obj/machinery/chaingun_cycler/cycler = null
 	var/cycler_firerate = 1
 	var/turf/cycler_turf = null
+	var/stalled = FALSE
 
 	var/obj/machinery/chaingun_loading_hopper/hopper = null
 	var/turf/hopper_turf = null
@@ -109,6 +110,76 @@
 	set_chaingunner(usr)
 	to_chat(gunner, "<span class='notice'>You reach for [src]'s gun camera controls.</span>")
 
+/obj/machinery/ship_weapon/chaingun/can_fire()
+	. = ..()
+	if(stalled)
+		//Add clicking sound
+		to_chat(gunner, "<span class='notice'>The triggers aren't responding! The gun's stalled out, manual clear required!</span>")
+		return FALSE
+
+/obj/machinery/ship_weapon/chaingun/local_fire() //FIGURE OUT WHY WHEN THE GUN STALLS OUT, THE GAME THINKS YOU'RE HOLDING DOWN YOUR MOUSE!!!!
+	. = ..()
+	if(!length(ammo))
+		magazine.forceMove(get_offset_target_turf(src, 0, 1))
+		magazine = null
+		ammo = null
+		state = STATE_NOTLOADED
+	if(!hopper)
+		new /obj/effect/particle_effect/smoke(hopper_turf)
+	else
+		if(prob(hopper.soot / 10))
+			new /obj/effect/particle_effect/smoke(hopper_turf)
+		if(!length(ammo))
+			if(length(hopper.loaded_belts) > 0)
+				var/obj/B = hopper.loaded_belts[1]
+				hopper.loaded_belts -= B
+				B.forceMove(src)
+				magazine = B
+				ammo = magazine.stored_ammo
+				state = STATE_CHAMBERED
+				//play clicky sound
+		if(length(hopper.loaded_belts) > hopper.belts_capacity)
+			if(prob(10 * (length(hopper.loaded_belts) - hopper.belts_capacity)))
+				var/obj/B = hopper.loaded_belts[((length(hopper.loaded_belts) - hopper.belts_capacity) + 2)]
+				var/turf/T = get_turf(pick(oview(src, 2)))
+				B.throw_at(T)
+
+	if(!cycler || cycler?.jammed)
+		stalled = TRUE
+		//play horrible ka-chunka sound
+	else
+		cycler.durability = min(cycler.durability -= rand(1,3), cycler.max_durability)
+		if(prob((100 - cycler.durability) / 10))
+			cycler?.jammed = TRUE
+			//play cycler jamming sound
+
+/obj/machinery/ship_weapon/chaingun/proc/manual_cycle()
+	cycler?.jammed = FALSE
+	//play ka-chunka sound
+	if(stalled)
+		stalled = FALSE
+	if(length(ammo) > 0)
+		var/obj/A = magazine.stored_ammo[1]
+		ammo -= A
+		A.forceMove(get_offset_target_turf(src, -1, 1))
+		magazine.update_icon()
+		state = STATE_LOADED
+		return
+	if(!length(ammo))
+		if(magazine)
+			magazine.forceMove(get_offset_target_turf(src, 0, 1))
+			magazine = null
+			ammo = null
+			state = STATE_NOTLOADED
+		if(length(hopper.loaded_belts) > 0)
+			var/obj/B = hopper.loaded_belts[1]
+			hopper.loaded_belts -= B
+			B.forceMove(src)
+			magazine = B
+			ammo = magazine.stored_ammo
+			state = STATE_LOADED
+		//play ka-chunka sound
+
 /datum/ship_weapon/chaingun
 	name = "Chaingun"
 	burst_size = 1
@@ -151,7 +222,7 @@
 		return FALSE
 	if(user)
 		climbing_in = TRUE
-		if(!do_after(user, 10 SECONDS, target = user))
+		if(!do_after(user, 3 SECONDS, target = user))
 			climbing_in = FALSE
 			return FALSE
 		else
@@ -196,18 +267,10 @@
 	else
 		OG?.fire_delay = (1 SECONDS / cycler_firerate)
 
-/obj/machinery/ship_weapon/chaingun/local_fire()
-	. = ..()
-	if(!hopper)
-		new /obj/effect/particle_effect/smoke(hopper_turf)
-	else
-		if(prob(hopper.soot / 10))
-			new /obj/effect/particle_effect/smoke(hopper_turf)
-
 /obj/machinery/ship_weapon/chaingun/ui_interact(mob/user, datum/tgui/ui)
 	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, "MunitionsComputer") //Probs need to replace this
+		ui = new(user, src, "chaingun")
 		ui.open()
 		ui.set_autoupdate(TRUE)
 
@@ -230,6 +293,8 @@
 			safety = !safety
 		if("load")
 			load()
+		if("manual_cycle")
+			manual_cycle()
 
 /obj/machinery/ship_weapon/chaingun/ui_data(mob/user)
 	var/list/data = list()
@@ -241,6 +306,6 @@
 	data["cycler_firerate"] = cycler?.cycle_speed
 	data["gyroscope_alignment"] = gyro?.alignment
 	data["max_gyroscope_alignment"] = gyro?.max_alignment
-	data["hopper_belts"] = hopper?.belts
+	data["hopper_belts"] = length(hopper?.loaded_belts)
 	data["max_hopper_belts"] = hopper?.belts_capacity
 	return data

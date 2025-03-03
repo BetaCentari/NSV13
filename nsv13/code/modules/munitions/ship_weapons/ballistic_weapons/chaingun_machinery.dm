@@ -59,15 +59,19 @@
 		chaingun.cycler = src
 		chaingun.cycler_firerate = cycle_speed
 		chaingun.update_cycler()
+		to_chat(user, "<span class='notice'>You start connecting the [src] to the [chaingun]...</span>")
 		if(do_after(user, 5 SECONDS, target = src))
 			(anchored = TRUE)
 			to_chat(user, "<span class='notice'>You wrench down the bolts, anchoring the [src] to the floor.</span>")
+			tool.play_tool_sound(src, 50)
 			return TRUE
 	else
 		tool.play_tool_sound(src, 50)
+		to_chat(user, "<span class='notice'>You start disconnecting the [src] from the [chaingun]...</span>")
 		if(do_after(user, 5 SECONDS, target = src))
 			(anchored = FALSE)
 			to_chat(user, "<span class='notice'>You loosen the bolts, freeing the [src] from the floor.</span>")
+			tool.play_tool_sound(src, 50)
 			return TRUE
 
 /obj/machinery/chaingun_cycler/screwdriver_act(mob/user, obj/item/tool)
@@ -80,6 +84,25 @@
 		(panel_open = FALSE)
 		to_chat(user, "<span class='notice'>You screw the [src]'s maintenance panel shut.</span>")
 		return TRUE
+
+/obj/machinery/chaingun_cycler/crowbar_act(mob/user, obj/item/tool)
+	if(!panel_open && jammed)
+		if(!do_after(user, 5 SECONDS, target = user))
+			to_chat(user, "<span class='warning'>You were interrupted!</span>")
+			return FALSE
+		else
+			//play crowbar slamming/anvil noise?
+			to_chat(user, "<span class='notice'>You slam your crowbar into the [src] to unjam it!</span>")
+			return TRUE
+	if(panel_open)
+		if(jammed)
+			to_chat(user, "<span class='warning'>You can't clear the jam with the panel open!</span>")
+			return FALSE
+		else
+			tool.play_tool_sound(src, 50)
+			deconstruct(TRUE)
+			return TRUE
+		return default_deconstruction_crowbar(user, tool)
 
 /obj/machinery/chaingun_cycler/attackby(obj/item/R, mob/living/user, params) //Taken from ammo_rack.dm from the ammo rack itself
 	. = ..()
@@ -166,7 +189,7 @@
 
 	var/obj/machinery/ship_weapon/chaingun/chaingun
 
-	var/belts = 0
+	var/list/loaded_belts = list()
 	var/belts_capacity = 5
 
 	var/soot = 0 //This seems familiar
@@ -205,15 +228,19 @@
 			return FALSE
 		tool.play_tool_sound(src, 50)
 		chaingun.hopper = src
+		to_chat(user, "<span class='notice'>You start connecting the [src] to the [chaingun]...</span>")
 		if(do_after(user, 5 SECONDS, target = src))
 			(anchored = TRUE)
 			to_chat(user, "<span class='notice'>You wrench down the bolts, anchoring the [src] to the floor.</span>")
+			tool.play_tool_sound(src, 50)
 			return TRUE
 	else
 		tool.play_tool_sound(src, 50)
+		to_chat(user, "<span class='notice'>You start disconnecting the [src] from the [chaingun]...</span>")
 		if(do_after(user, 5 SECONDS, target = src))
 			(anchored = FALSE)
 			to_chat(user, "<span class='notice'>You loosen the bolts, freeing the [src] from the floor.</span>")
+			tool.play_tool_sound(src, 50)
 			return TRUE
 
 /obj/machinery/chaingun_loading_hopper/screwdriver_act(mob/user, obj/item/tool)
@@ -226,6 +253,13 @@
 		(panel_open = FALSE)
 		to_chat(user, "<span class='notice'>You screw the [src]'s maintenance panel shut.</span>")
 		return TRUE
+
+/obj/machinery/chaingun_loading_hopper/crowbar_act(mob/user, obj/item/tool)
+	if(panel_open)
+		tool.play_tool_sound(src, 50)
+		deconstruct(TRUE)
+		return TRUE
+	return default_deconstruction_crowbar(user, tool)
 
 /obj/machinery/chaingun_loading_hopper/attack_hand(mob/living/user) //Replace with swabber when broadside update gets full merged
 	. = ..()
@@ -250,7 +284,7 @@
 		. += "The maintenance panel is <b>unscrewed</b> and the machinery could be <i>pried out</i>."
 	else
 		. += "The maintenance panel is <b>closed</b> and could be <i>screwed open</i>."
-	. += "<span class ='notice'>It has [belts]/[belts_capacity] ammunition belts seated inside.</span>"
+	. += "<span class ='notice'>It has [length(loaded_belts)]/[belts_capacity] ammunition belts seated inside.</span>"
 
 /obj/machinery/chaingun_gyroscope
 	name = "'Always Upright' Kinetic Gyroscope" //tbd
@@ -298,15 +332,19 @@
 			return FALSE
 		chaingun.gyro = src
 		tool.play_tool_sound(src, 50)
+		to_chat(user, "<span class='notice'>You start connecting the [src] to the [chaingun]...</span>")
 		if(do_after(user, 5 SECONDS, target = src))
 			(anchored = TRUE)
-			to_chat(user, "<span class='notice'>You wrench down the bolts, anchoring the [src] to the floor.</span>")
+			to_chat(user, "<span class='notice'>You wrench down the bolts, anchoring the [src] to the [chaingun].</span>")
+			tool.play_tool_sound(src, 50)
 			return TRUE
 	else
 		tool.play_tool_sound(src, 50)
+		to_chat(user, "<span class='notice'>You start disconnecting the [src] from the [chaingun]...</span>")
 		if(do_after(user, 5 SECONDS, target = src))
 			(anchored = FALSE)
 			to_chat(user, "<span class='notice'>You loosen the bolts, freeing the [src] from the floor.</span>")
+			tool.play_tool_sound(src, 50)
 			return TRUE
 
 /obj/machinery/chaingun_gyroscope/screwdriver_act(mob/user, obj/item/tool)
@@ -319,6 +357,13 @@
 		(panel_open = FALSE)
 		to_chat(user, "<span class='notice'>You screw the [src]'s maintenance panel shut.</span>")
 		return TRUE
+
+/obj/machinery/chaingun_gyroscope/crowbar_act(mob/user, obj/item/tool)
+	if(panel_open)
+		tool.play_tool_sound(src, 50)
+		deconstruct(TRUE)
+		return TRUE
+	return default_deconstruction_crowbar(user, tool)
 
 /obj/machinery/chaingun_gyroscope/attack_hand(mob/living/user) //add alignment sound?
 	. = ..()

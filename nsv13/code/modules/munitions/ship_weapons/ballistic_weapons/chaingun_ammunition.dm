@@ -23,24 +23,24 @@
 /obj/machinery/chaingun_loading_hopper/attackby(obj/item/I, mob/living/user, params) //Add/make sounds
 	. = ..()
 	if(istype(I, /obj/item/ammo_box/magazine/chaingun_belt))
-		if(belts == 0)
+		if(!length(loaded_belts))
 			to_chat(user, "<span class='notice'>You <i>very</i> carefully feed the belt into the mechanism...</span>")
-			if(!do_after(user, 15 SECONDS, target = src))
+			if(!do_after(user, 10 SECONDS, target = src))
 				user.apply_damage(5, BRUTE, pick(BODY_ZONE_R_ARM, BODY_ZONE_L_ARM))
 				to_chat(user, "<span class='userdanger'>Something chews up your arm!</span>")
 				return FALSE
 			else
-				belts = (belts += 1)
 				I.forceMove(src)
+				loaded_belts |= I
 				return TRUE
-		if(belts > 0 && (belts != belts_capacity))
+		if(length(loaded_belts) > 0 && (length(loaded_belts) != belts_capacity))
 			if(!do_after(user, 3 SECONDS, target = src))
 				to_chat(user, "<span class='warning'>You were interrupted!</span>")
 				return FALSE
 			else
 				to_chat(user, "<span class='notice'>You carefully link the chain belts together...</span>")
-				belts = (belts += 1)
 				I.forceMove(src)
+				loaded_belts |= I
 				return TRUE
 		else
 			to_chat(user, "<span class='warning'>The [src] can't take another belt!</span>")

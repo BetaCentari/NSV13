@@ -199,6 +199,7 @@
 	var/flak_battery_amount = 0
 	var/broadside = FALSE //Whether the ship is allowed to have broadside cannons or not
 	var/plasma_caster = FALSE //Wehther the ship is allowed to have plasma gun or not
+	var/chaingun = FALSE //Wether the ship is allowed to have the chaingun or not I am NO LONGER SORRY BOKKIE
 	var/role = NORMAL_OVERMAP
 
 	var/list/missions = list()
@@ -492,6 +493,9 @@ Proc to spool up a new Z-level for a player ship and assign it a treadmill.
 		weapon_types[FIRE_MODE_BROADSIDE] = new/datum/ship_weapon/broadside(src)
 	if(plasma_caster)
 		weapon_types[FIRE_MODE_PHORON] = new/datum/ship_weapon/plasma_caster(src)
+	if(chaingun)
+		weapon_types[FIRE_MODE_CHAINGUN] = new/datum/ship_weapon/chaingun(src)
+
 
 /obj/item/projectile/Destroy()
 	if(physics2d)
