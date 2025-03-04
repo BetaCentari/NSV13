@@ -101,8 +101,7 @@
 		else
 			tool.play_tool_sound(src, 50)
 			deconstruct(TRUE)
-			return TRUE
-		return default_deconstruction_crowbar(user, tool)
+			return default_deconstruction_crowbar(user, tool)
 
 /obj/machinery/chaingun_cycler/attackby(obj/item/R, mob/living/user, params) //Taken from ammo_rack.dm from the ammo rack itself
 	. = ..()

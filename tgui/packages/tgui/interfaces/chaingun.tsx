@@ -7,8 +7,10 @@ type chaingunData = {
   loaded: number;
   chambered: number;
   safety: BooleanLike;
+  stalled: BooleanLike;
   ammo: number;
   max_ammo: number;
+  cycler_jammed: BooleanLike;
   cycler_firerate: number;
   gyroscope_alignment: number;
   max_gyroscope_alignment: number;
@@ -22,8 +24,10 @@ export const chaingun = (props, context) => {
     loaded,
     chambered,
     safety,
+    stalled,
     ammo,
     max_ammo,
+    cycler_jammed,
     cycler_firerate,
     gyroscope_alignment,
     max_gyroscope_alignment,

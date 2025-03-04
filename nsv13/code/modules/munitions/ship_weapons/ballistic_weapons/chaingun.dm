@@ -154,17 +154,19 @@
 			//play cycler jamming sound
 
 /obj/machinery/ship_weapon/chaingun/proc/manual_cycle()
-	cycler?.jammed = FALSE
 	//play ka-chunka sound
 	if(stalled)
 		stalled = FALSE
-	if(length(ammo) > 0)
-		var/obj/A = magazine.stored_ammo[1]
-		ammo -= A
-		A.forceMove(get_offset_target_turf(src, -1, 1))
-		magazine.update_icon()
 		state = STATE_LOADED
 		return
+	else
+		if(length(ammo) > 0)
+			var/obj/A = magazine.stored_ammo[1]
+			ammo -= A
+			A.forceMove(get_offset_target_turf(src, -1, 1))
+			magazine.update_icon()
+			state = STATE_LOADED
+			return
 	if(!length(ammo))
 		if(magazine)
 			magazine.forceMove(get_offset_target_turf(src, 0, 1))
@@ -298,12 +300,14 @@
 
 /obj/machinery/ship_weapon/chaingun/ui_data(mob/user)
 	var/list/data = list()
+	data["stalled"] = stalled
 	data["loaded"] = state > STATE_LOADED
 	data["chambered"] = state == STATE_CHAMBERED
 	data["safety"] = safety
 	data["ammo"] = ammo.len
 	data["max_ammo"] = max_ammo
 	data["cycler_firerate"] = cycler?.cycle_speed
+	data["cycler_jammed"] = cycler?.jammed
 	data["gyroscope_alignment"] = gyro?.alignment
 	data["max_gyroscope_alignment"] = gyro?.max_alignment
 	data["hopper_belts"] = length(hopper?.loaded_belts)
