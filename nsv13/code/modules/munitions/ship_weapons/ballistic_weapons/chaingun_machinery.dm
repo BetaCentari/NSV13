@@ -92,6 +92,7 @@
 			return FALSE
 		else
 			//play crowbar slamming/anvil noise?
+			jammed = FALSE
 			to_chat(user, "<span class='notice'>You slam your crowbar into the [src] to unjam it!</span>")
 			return TRUE
 	if(panel_open)
@@ -174,6 +175,30 @@
 		A.apply_damage(5, BRUTE, pick(BODY_ZONE_R_ARM, BODY_ZONE_L_ARM))
 		busy = FALSE
 		return TRUE
+
+/obj/machinery/chaingun_cycler/examine()
+	. = ..()
+	if(panel_open)
+		. += "The maintenance panel is <b>unscrewed</b> and the machinery could be <i>pried out</i>. It can be <u>oiled</u>."
+	else
+		. += "The maintenance panel is <b>closed</b> and could be <i>screwed open</i>."
+	if(jammed)
+		. += "The gears have stopped moving! You'll have to <b>pry</b> them apart to get them moving again!"
+	else
+		. += "It's still ticking, despite it all."
+	switch(durability)
+		if(100)
+			. += "<span class='notice'>The [src] is ticking like a watch, perfectly on time!</span>"
+		if(81 to 99)
+			. += "<span class='notice'>The [src] is a little slow, the gears are starting to grind.</span>"
+		if(61 to 80)
+			. += "<span class='notice'>The [src] is shaking a bit, the gears occasionally stop up.</span>"
+		if(41 to 60)
+			. += "<span class='notice'>The [src] is barely keeping a tempo, it might jam up any second.</span>"
+		if(21 to 40)
+			. += "<span class='warning'>The [src] is making a horrible grinding noise! It needs oil now!</span>"
+		if(0 to 20)
+			. += "<span class='warning'>The [src] is hardly moving! It needs oil and TLC yesterday!</span>"
 
 /obj/machinery/chaingun_loading_hopper
 	name = "Chaingun Loading Hopper" //tbd
@@ -280,10 +305,23 @@
 /obj/machinery/chaingun_loading_hopper/examine()
 	. = ..()
 	if(panel_open)
-		. += "The maintenance panel is <b>unscrewed</b> and the machinery could be <i>pried out</i>."
+		. += "The maintenance panel is <b>unscrewed</b> and the machinery could be <i>pried out</i>. You can <u>swab</u> it clean."
 	else
 		. += "The maintenance panel is <b>closed</b> and could be <i>screwed open</i>."
 	. += "<span class ='notice'>It has [length(loaded_belts)]/[belts_capacity] ammunition belts seated inside.</span>"
+	switch(soot)
+		if(0)
+			. += "<span class='notice'>The [src] looks spic and span, clean as a whistle!</span>"
+		if(1 to 20)
+			. += "<span class='notice'>The [src] is a little dirty, could do with a spitshine.</span>"
+		if(21 to 40)
+			. += "<span class='notice'>The [src] is a bit dirty, might need some cleaning soon...</span>"
+		if(41 to 60)
+			. += "<span class='notice'>The [src] is filthy, it's might jam and spit up smoke.</span>"
+		if(61 to 80)
+			. += "<span class='warning'>The [src] is disgusting, it needs to be cleaned ASAP!</span>"
+		if(81 to 100)
+			. += "<span class='warning'>The [src] is practically black with soot! It's a miracle it's still working!</span>"
 
 /obj/machinery/chaingun_gyroscope
 	name = "'Always Upright' Kinetic Gyroscope" //tbd
@@ -298,6 +336,8 @@
 
 	var/obj/machinery/ship_weapon/chaingun/chaingun
 
+	var/accuracy = 1
+
 	var/alignment = 100
 	var/max_alignment = 100
 
@@ -309,13 +349,15 @@
 	name = "circuit board (chaingun gyroscope)"
 	desc = "spinny winny lookin' mf" //placeholder
 	req_components = list(
-		/obj/item/stack/sheet/iron = 50,
+		/obj/item/stack/sheet/iron = 10,
 		/obj/item/stack/cable_coil = 5,
-		/obj/item/stock_parts/manipulator = 2,
 		/obj/item/stock_parts/scanning_module = 1,
-		/obj/item/stock_parts/micro_laser = 1,
 	)
 	build_path = /obj/machinery/chaingun_gyroscope
+
+/obj/machinery/chaingun_gyroscope/RefreshParts()
+	for(var/obj/item/stock_parts/scanning_module/SM in component_parts)
+		accuracy = (SM.rating)
 
 /obj/machinery/chaingun_gyroscope/wrench_act(mob/user, obj/item/tool)
 	if(!panel_open)
@@ -380,3 +422,23 @@
 				alignment = 100
 				to_chat(user, "<span class='notice'>You finish aligning the [src].</span>")
 				break
+
+/obj/machinery/chaingun_gyroscope/examine()
+	. = ..()
+	if(panel_open)
+		. += "The maintenance panel is <b>unscrewed</b> and the machinery could be <i>pried out</i>. You can realign it by <u>hand</u>."
+	else
+		. += "The maintenance panel is <b>closed</b> and could be <i>screwed open</i>."
+	switch(alignment)
+		if(100)
+			. += "<span class='notice'>The [src] is perfectly aligned and well balanced!</span>"
+		if(81 to 99)
+			. += "<span class='notice'>The [src] is a little off kilter, should be fine for a while.</span>"
+		if(61 to 80)
+			. += "<span class='notice'>The [src] is off center and having a hard time staying balanced.</span>"
+		if(41 to 60)
+			. += "<span class='notice'>The [src] is bothered, unmoisturized, unhappy, not in its lane, unfocused, not flourishing. It needs realignment.</span>"
+		if(21 to 40)
+			. += "<span class='warning'>The [src] is barely functional, it needs to be realigned ASAP!</span>"
+		if(0 to 20)
+			. += "<span class='warning'>The [src] might as well be a decoration, realign the damned thing!</span>"

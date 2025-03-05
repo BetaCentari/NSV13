@@ -15,6 +15,7 @@
 
 	fire_mode = FIRE_MODE_CHAINGUN
 
+
 	semi_auto = TRUE
 	maintainable = FALSE
 	max_ammo = 5
@@ -148,10 +149,12 @@
 		stalled = TRUE
 		//play horrible ka-chunka sound
 	else
-		cycler.durability = min(cycler.durability -= rand(1,3), cycler.max_durability)
+		cycler.durability = min(cycler.durability -= rand(1,2), cycler.max_durability)
 		if(prob((100 - cycler.durability) / 10))
 			cycler?.jammed = TRUE
 			//play cycler jamming sound
+	if(gyro)
+		gyro.alignment = max((gyro.alignment - rand(1, 5)), 0)
 
 /obj/machinery/ship_weapon/chaingun/proc/manual_cycle()
 	//play ka-chunka sound
@@ -182,6 +185,16 @@
 			state = STATE_LOADED
 		//play ka-chunka sound
 
+#define DEFAULT_CHAINGUN_SPREAD 25
+
+/obj/machinery/ship_weapon/chaingun/proc/get_spread()
+	if(!gyro)
+		return DEFAULT_CHAINGUN_SPREAD //Default spread is 25 degrees of deviation
+	return DEFAULT_CHAINGUN_SPREAD - ((gyro.accuracy * (0.01 * gyro.alignment)) * 5)
+
+/obj/machinery/ship_weapon/chaingun/animate_projectile(atom/target)
+	return linked.fire_projectile(weapon_type.default_projectile_type, target, lateral=weapon_type.lateral, spread = get_spread())
+
 /datum/ship_weapon/chaingun
 	name = "Chaingun"
 	burst_size = 1
@@ -195,7 +208,7 @@
 	weapon_class = WEAPON_CLASS_LIGHT
 	miss_chance = 10
 	max_miss_distance = 6
-	ai_fire_delay = 10 SECONDS
+	ai_fire_delay = 2 SECONDS
 	allowed_roles = OVERMAP_USER_ROLE_SECONDARY_GUNNER
 	screen_shake = 0
 
@@ -259,7 +272,7 @@
 
 /datum/component/overmap_gunning/chaingun //move this later
 	fire_mode = FIRE_MODE_CHAINGUN
-	automatic = TRUE
+	automatic = FALSE
 	fire_delay = 1 SECONDS
 
 /obj/machinery/ship_weapon/chaingun/proc/update_cycler()

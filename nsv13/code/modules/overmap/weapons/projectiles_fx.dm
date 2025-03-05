@@ -641,7 +641,7 @@ Misc projectile types, effects, think of this as the special FX file.
 	damage = 100
 	flag = "overmap_light"
 	spread = 0
-	speed = 5
+	speed = 0.3
 
 /obj/effect/temp_visual/overmap_explosion
 	icon = 'nsv13/goonstation/icons/hugeexplosion.dmi'

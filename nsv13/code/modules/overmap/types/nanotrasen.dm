@@ -190,6 +190,7 @@
 	armor = list("overmap_light" = 95, "overmap_medium" = 50, "overmap_heavy" = 10)
 	overmap_deletion_traits = DAMAGE_STARTS_COUNTDOWN
 	broadside = TRUE
+	chaingun = TRUE //Just for testing, remove
 
 /obj/structure/overmap/nanotrasen/heavy_cruiser/starter //Currently assigned to Hammerhead
 	icon = 'nsv13/icons/overmap/new/nanotrasen/heavy_cruiser.dmi'
