@@ -31,6 +31,8 @@
 //	chamber_delay_rapid =
 //	chamber_delay =
 
+	layer = 2.8 //Want to make sure this is below everything else other than the floor
+
 	var/mob/gunner = null
 	var/occupied = FALSE
 	var/climbing_in = FALSE
